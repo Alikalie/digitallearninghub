@@ -19,8 +19,13 @@ import {
   User,
   History,
   X,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useVoice } from "@/hooks/useVoice";
 
 interface Message {
   role: "user" | "assistant";
@@ -48,6 +53,7 @@ export default function Chat() {
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { isListening, isSpeaking, startListening, stopListening, speak, stopSpeaking } = useVoice();
 
   useEffect(() => {
     if (user) {
@@ -441,6 +447,15 @@ export default function Chat() {
                     {message.role === "assistant" ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         <ReactMarkdown>{message.content || "..."}</ReactMarkdown>
+                        {message.content && (
+                          <button
+                            onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                            className="mt-1 text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+                          >
+                            {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                            {isSpeaking ? "Stop" : "Listen"}
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap">{message.content}</p>
@@ -476,12 +491,27 @@ export default function Chat() {
           {/* Input */}
           <div className="p-4 border-t border-border bg-background">
             <div className="max-w-3xl mx-auto flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn("h-[52px] w-[52px] flex-shrink-0", isListening && "text-destructive animate-pulse")}
+                onClick={() => {
+                  if (isListening) {
+                    stopListening();
+                  } else {
+                    startListening((text) => setInput((prev) => prev + (prev ? " " : "") + text));
+                  }
+                }}
+                title={isListening ? "Stop listening" : "Voice input"}
+              >
+                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+              </Button>
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type your message..."
+                placeholder={isListening ? "Listening..." : "Type your message..."}
                 className="min-h-[52px] max-h-32 resize-none input-focus"
                 rows={1}
               />

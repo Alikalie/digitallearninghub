@@ -19,6 +19,7 @@ import { DLHLogo } from "@/components/DLHLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2, Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
+import { DLH_COURSES } from "@/lib/courses";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -397,13 +398,23 @@ export default function Auth() {
                       </div>
 
                       <div>
-                        <Label htmlFor="course_of_interest">Course of Interest</Label>
-                        <Input
-                          id="course_of_interest"
-                          placeholder="e.g., Mathematics, Physics"
-                          className="mt-1 input-focus"
-                          {...signupForm.register("course_of_interest")}
-                        />
+                        <Label htmlFor="course_of_interest">Choose Your Course</Label>
+                        <Select
+                          onValueChange={(value) =>
+                            signupForm.setValue("course_of_interest", value)
+                          }
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select a course" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DLH_COURSES.map((course) => (
+                              <SelectItem key={course.id} value={course.title}>
+                                {course.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="flex items-start space-x-2">

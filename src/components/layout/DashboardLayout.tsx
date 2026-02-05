@@ -25,6 +25,7 @@ import {
   Bell,
   User,
   ChevronRight,
+  Shield,
 } from "lucide-react";
 
 const navigation = [
@@ -33,6 +34,7 @@ const navigation = [
   { name: "Image Generator", href: "/image-generator", icon: Image },
   { name: "Courses", href: "/courses", icon: BookOpen },
   { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Admin", href: "/admin", icon: Shield },
 ];
 
 interface DashboardLayoutProps {

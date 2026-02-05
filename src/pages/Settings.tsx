@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,10 +20,21 @@ import {
   Save,
   Camera,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAvatarUpload } from "@/hooks/useAvatarUpload";
+import { DLH_COURSES } from "@/lib/courses";
 
 export default function Settings() {
-  const { profile, refreshProfile, signOut } = useAuth();
+  const { profile, user, refreshProfile, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
+  const { uploadAvatar, uploading } = useAvatarUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || "",
     phone_number: profile?.phone_number || "",
@@ -128,8 +139,25 @@ export default function Settings() {
                       {initials}
                     </AvatarFallback>
                   </Avatar>
-                  <button className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Camera size={14} />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file && user) {
+                        await uploadAvatar(user.id, file);
+                        await refreshProfile();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                   </button>
                 </div>
                 <div>
@@ -175,13 +203,21 @@ export default function Settings() {
                 </div>
                 <div>
                   <Label htmlFor="course_of_interest">Course of Interest</Label>
-                  <Input
-                    id="course_of_interest"
-                    name="course_of_interest"
+                  <Select
                     value={formData.course_of_interest}
-                    onChange={handleInputChange}
-                    className="mt-1 input-focus"
-                  />
+                    onValueChange={(value) => setFormData((f) => ({ ...f, course_of_interest: value }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select a course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DLH_COURSES.map((course) => (
+                        <SelectItem key={course.id} value={course.title}>
+                          {course.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="sm:col-span-2">
                   <Label htmlFor="bio">Bio</Label>
