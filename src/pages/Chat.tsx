@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
+import { DLH_COURSES } from "@/lib/courses";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,6 +222,7 @@ export default function Chat() {
     }
 
     // Stream AI response
+    const courseId = searchParams.get("course");
     try {
       const response = await fetch(CHAT_URL, {
         method: "POST",
@@ -233,6 +235,7 @@ export default function Chat() {
             role: m.role,
             content: m.content,
           })),
+          courseId: courseId || undefined,
         }),
       });
 
@@ -386,7 +389,10 @@ export default function Chat() {
           {/* Messages */}
           <ScrollArea className="flex-1 p-4">
             <div className="max-w-3xl mx-auto space-y-6">
-              {messages.length === 0 && (
+              {messages.length === 0 && (() => {
+                const courseId = searchParams.get("course");
+                const activeCourse = courseId ? DLH_COURSES.find(c => c.id === courseId) : null;
+                return (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -396,19 +402,23 @@ export default function Chat() {
                     <GraduationCap className="text-primary-foreground" size={32} />
                   </div>
                   <h2 className="text-xl font-semibold mb-2">
-                    Welcome to DLH Smart Tutor
+                    {activeCourse ? `Welcome to ${activeCourse.title}` : "Welcome to DLH Smart Tutor"}
                   </h2>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    I'm your AI learning assistant. Ask me anything about your studies,
-                    homework, or any topic you want to learn about!
+                    {activeCourse
+                      ? `Your AI tutor is ready to teach you ${activeCourse.title}. Ask anything about ${activeCourse.topics.join(", ")}!`
+                      : "I'm your AI learning assistant. Ask me anything about your studies, homework, or any topic you want to learn about!"}
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-2">
-                    {[
-                      "What is Digital Learning Hub?",
-                      "Help me learn graphic design",
-                      "How can I start freelancing in Sierra Leone?",
-                      "Tell me about DLH courses",
-                    ].map((suggestion) => (
+                    {(activeCourse
+                      ? activeCourse.topics.slice(0, 4).map(t => `Teach me about ${t}`)
+                      : [
+                          "What is Digital Learning Hub?",
+                          "Help me learn graphic design",
+                          "How can I start freelancing in Sierra Leone?",
+                          "Tell me about DLH courses",
+                        ]
+                    ).map((suggestion) => (
                       <button
                         key={suggestion}
                         onClick={() => setInput(suggestion)}
@@ -419,7 +429,8 @@ export default function Chat() {
                     ))}
                   </div>
                 </motion.div>
-              )}
+                );
+              })()}
 
               {messages.map((message, index) => (
                 <motion.div
