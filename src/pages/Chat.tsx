@@ -449,14 +449,14 @@ export default function Chat() {
                   )}
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-2xl px-4 py-3",
+                      "max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 sm:px-4 py-3 overflow-hidden",
                       message.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-muted rounded-bl-md"
                     )}
                   >
                     {message.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-hidden [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-3 [&_pre]:text-xs [&_code]:break-all [&_code]:text-xs">
                         <ReactMarkdown>{message.content || "..."}</ReactMarkdown>
                         {message.content && (
                           <button

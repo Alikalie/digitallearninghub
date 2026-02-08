@@ -127,7 +127,11 @@ export default function Auth() {
           toast.error(error.message);
         }
       } else {
-        toast.success("Account created! Please check your email to verify your account.");
+        toast.success("Account created! Please check your email to verify your account.", {
+          position: "top-center",
+          duration: 60000,
+          style: { background: "hsl(142 76% 36%)", color: "white", fontWeight: 600, fontSize: "14px" },
+        });
         setMode("login");
       }
     } catch (error: any) {

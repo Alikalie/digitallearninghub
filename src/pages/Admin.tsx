@@ -13,17 +13,18 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Search, Eye, EyeOff, Bot,
+  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot,
 } from "lucide-react";
 import { DLH_COURSES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
+import { UserManagementTab } from "@/components/admin/UserManagementTab";
 
 interface Profile {
   id: string;
@@ -35,6 +36,10 @@ interface Profile {
   is_suspended: boolean | null;
   created_at: string;
   course_of_interest: string | null;
+  phone_number: string | null;
+  country: string | null;
+  gender: string | null;
+  avatar_url: string | null;
 }
 
 interface Course {
@@ -54,31 +59,24 @@ export default function Admin() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userSearch, setUserSearch] = useState("");
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courseForm, setCourseForm] = useState({ title: "", description: "", category: "", image_url: "", is_published: true });
 
-  useEffect(() => {
-    checkAdmin();
-  }, [user]);
+  useEffect(() => { checkAdmin(); }, [user]);
 
   const checkAdmin = async () => {
     if (!user) return;
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     const admin = data?.some((r) => r.role === "admin") || false;
     setIsAdmin(admin);
-    if (admin) {
-      fetchUsers();
-      fetchCourses();
-    } else {
-      setLoading(false);
-    }
+    if (admin) { fetchUsers(); fetchCourses(); }
+    else { setLoading(false); }
   };
 
   const fetchUsers = async () => {
     const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-    setUsers(data || []);
+    setUsers((data as Profile[]) || []);
   };
 
   const fetchCourses = async () => {
@@ -87,36 +85,10 @@ export default function Admin() {
     setLoading(false);
   };
 
-  const toggleSuspend = async (profile: Profile) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_suspended: !profile.is_suspended })
-      .eq("id", profile.id);
-    if (error) { toast.error("Failed to update user"); return; }
-    toast.success(profile.is_suspended ? "User unsuspended" : "User suspended");
-    fetchUsers();
-  };
-
-  const toggleVerify = async (profile: Profile) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_verified: !profile.is_verified })
-      .eq("id", profile.id);
-    if (error) { toast.error("Failed to update user"); return; }
-    toast.success(profile.is_verified ? "Verification removed" : "User verified");
-    fetchUsers();
-  };
-
   const openCourseDialog = (course?: Course) => {
     if (course) {
       setEditingCourse(course);
-      setCourseForm({
-        title: course.title,
-        description: course.description || "",
-        category: course.category || "",
-        image_url: course.image_url || "",
-        is_published: course.is_published ?? true,
-      });
+      setCourseForm({ title: course.title, description: course.description || "", category: course.category || "", image_url: course.image_url || "", is_published: course.is_published ?? true });
     } else {
       setEditingCourse(null);
       setCourseForm({ title: "", description: "", category: "", image_url: "", is_published: true });
@@ -126,7 +98,6 @@ export default function Admin() {
 
   const saveCourse = async () => {
     if (!courseForm.title.trim()) { toast.error("Title is required"); return; }
-    
     if (editingCourse) {
       const { error } = await supabase.from("courses").update(courseForm).eq("id", editingCourse.id);
       if (error) { toast.error("Failed to update course"); return; }
@@ -149,24 +120,13 @@ export default function Admin() {
 
   const seedCourses = async () => {
     const coursesToInsert = DLH_COURSES.map((c) => ({
-      title: c.title,
-      description: c.description,
-      category: c.category,
-      image_url: c.image_url,
-      is_published: true,
-      tutor_id: user?.id,
+      title: c.title, description: c.description, category: c.category, image_url: c.image_url, is_published: true, tutor_id: user?.id,
     }));
     const { error } = await supabase.from("courses").insert(coursesToInsert);
     if (error) { toast.error("Failed to seed courses: " + error.message); return; }
-    toast.success("DLH courses added!");
+    toast.success("All DLH courses added!");
     fetchCourses();
   };
-
-  const filteredUsers = users.filter(
-    (u) =>
-      u.full_name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase())
-  );
 
   if (isAdmin === null) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin" /></div></DashboardLayout>;
   if (!isAdmin) return (
@@ -188,71 +148,21 @@ export default function Admin() {
         </motion.div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="users" className="gap-2"><Users size={16} />Users</TabsTrigger>
             <TabsTrigger value="courses" className="gap-2"><BookOpen size={16} />Courses</TabsTrigger>
             <TabsTrigger value="bot" className="gap-2"><Bot size={16} />Bot Knowledge</TabsTrigger>
           </TabsList>
 
-          {/* Users Tab */}
           <TabsContent value="users">
-            <div className="dlh-card">
-              <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input placeholder="Search users..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className="pl-9" />
-                </div>
-                <Badge variant="secondary" className="self-start">{users.length} users</Badge>
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((u) => (
-                      <TableRow key={u.id}>
-                        <TableCell className="font-medium">{u.full_name}</TableCell>
-                        <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                        <TableCell><Badge variant="outline" className="capitalize">{u.user_type || "student"}</Badge></TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{u.course_of_interest || "—"}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {u.is_verified && <Badge className="bg-dlh-success/10 text-dlh-success border-0 text-xs">Verified</Badge>}
-                            {u.is_suspended && <Badge variant="destructive" className="text-xs">Suspended</Badge>}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => toggleVerify(u)} title={u.is_verified ? "Unverify" : "Verify"}>
-                              {u.is_verified ? <EyeOff size={14} /> : <Eye size={14} />}
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => toggleSuspend(u)} className={u.is_suspended ? "text-dlh-success" : "text-destructive"}>
-                              <Shield size={14} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+            <UserManagementTab users={users} onRefresh={fetchUsers} />
           </TabsContent>
 
-          {/* Courses Tab */}
           <TabsContent value="courses">
-            <div className="flex gap-3 mb-4">
+            <div className="flex flex-wrap gap-3 mb-4">
               <Button onClick={() => openCourseDialog()} className="bg-gradient-primary"><Plus className="mr-2 h-4 w-4" />Add Course</Button>
               {courses.length === 0 && (
-                <Button variant="outline" onClick={seedCourses}>Seed DLH Courses</Button>
+                <Button variant="outline" onClick={seedCourses}>Seed All DLH Courses</Button>
               )}
             </div>
             <div className="dlh-card overflow-x-auto">
@@ -268,9 +178,9 @@ export default function Admin() {
                 <TableBody>
                   {courses.map((c) => (
                     <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.title}</TableCell>
-                      <TableCell><Badge variant="outline">{c.category || "—"}</Badge></TableCell>
-                      <TableCell>{c.is_published ? <Badge className="bg-dlh-success/10 text-dlh-success border-0">Live</Badge> : <Badge variant="secondary">Draft</Badge>}</TableCell>
+                      <TableCell className="font-medium max-w-[200px] truncate">{c.title}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-xs">{c.category || "—"}</Badge></TableCell>
+                      <TableCell>{c.is_published ? <Badge className="bg-dlh-success/10 text-dlh-success border-0 text-xs">Live</Badge> : <Badge variant="secondary" className="text-xs">Draft</Badge>}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button size="sm" variant="ghost" onClick={() => openCourseDialog(c)}><Pencil size={14} /></Button>
@@ -284,25 +194,21 @@ export default function Admin() {
             </div>
           </TabsContent>
 
-          {/* Bot Knowledge Tab */}
           <TabsContent value="bot">
             <BotKnowledgeTab />
           </TabsContent>
         </Tabs>
 
-        {/* Course Dialog */}
         <Dialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingCourse ? "Edit Course" : "Add Course"}</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>{editingCourse ? "Edit Course" : "Add Course"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>Title *</Label><Input value={courseForm.title} onChange={(e) => setCourseForm((f) => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
-              <div><Label>Description</Label><Textarea value={courseForm.description} onChange={(e) => setCourseForm((f) => ({ ...f, description: e.target.value }))} className="mt-1" rows={3} /></div>
-              <div><Label>Category</Label><Input value={courseForm.category} onChange={(e) => setCourseForm((f) => ({ ...f, category: e.target.value }))} className="mt-1" /></div>
-              <div><Label>Image URL</Label><Input value={courseForm.image_url} onChange={(e) => setCourseForm((f) => ({ ...f, image_url: e.target.value }))} className="mt-1" /></div>
+              <div><Label>Title *</Label><Input value={courseForm.title} onChange={(e) => setCourseForm(f => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
+              <div><Label>Description</Label><Textarea value={courseForm.description} onChange={(e) => setCourseForm(f => ({ ...f, description: e.target.value }))} className="mt-1" rows={3} /></div>
+              <div><Label>Category</Label><Input value={courseForm.category} onChange={(e) => setCourseForm(f => ({ ...f, category: e.target.value }))} className="mt-1" /></div>
+              <div><Label>Image URL</Label><Input value={courseForm.image_url} onChange={(e) => setCourseForm(f => ({ ...f, image_url: e.target.value }))} className="mt-1" /></div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" checked={courseForm.is_published} onChange={(e) => setCourseForm((f) => ({ ...f, is_published: e.target.checked }))} />
+                <input type="checkbox" checked={courseForm.is_published} onChange={(e) => setCourseForm(f => ({ ...f, is_published: e.target.checked }))} />
                 <Label>Published</Label>
               </div>
             </div>
