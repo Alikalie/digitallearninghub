@@ -1,22 +1,20 @@
-# Welcome to your Lovable project
+# Welcome to Digital Learning Hub Smart Tutor
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This is the Digital Learning Hub Smart Tutor project.
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
+**Use your local development environment**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
+You can work locally using your preferred IDE by cloning this repo and making changes. Push changes to update the repository.
 
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+If you want to work locally using your own IDE, you can clone this repo and push changes.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,12 +60,8 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Follow your preferred deployment method for this React + TypeScript application built with Vite.
 
-## Can I connect a custom domain to my Lovable project?
+## Can I connect a custom domain?
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Yes, you can connect a custom domain to your deployment platform.
