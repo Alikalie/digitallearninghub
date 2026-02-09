@@ -18,7 +18,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DLHLogo } from "@/components/DLHLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, Eye, EyeOff, ArrowLeft, ArrowRight, MailCheck } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { DLH_COURSES } from "@/lib/courses";
 
 const loginSchema = z.object({
@@ -55,6 +58,7 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
 
@@ -127,12 +131,7 @@ export default function Auth() {
           toast.error(error.message);
         }
       } else {
-        toast.success("Account created! Please check your email to verify your account.", {
-          position: "top-center",
-          duration: 60000,
-          style: { background: "hsl(142 76% 36%)", color: "white", fontWeight: 600, fontSize: "14px" },
-        });
-        setMode("login");
+        setShowVerifyDialog(true);
       }
     } catch (error: any) {
       toast.error("An unexpected error occurred. Please try again.");
@@ -484,6 +483,29 @@ export default function Auth() {
           </motion.div>
         </div>
       </div>
+
+      {/* Email Verification Dialog */}
+      <Dialog open={showVerifyDialog} onOpenChange={(open) => {
+        setShowVerifyDialog(open);
+        if (!open) { setMode("login"); setStep(1); }
+      }}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader>
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+              <MailCheck className="text-primary" size={32} />
+            </div>
+            <DialogTitle className="text-xl">Verify Your Email</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            We've sent a verification link to your email address. Please check your inbox (and spam folder) and click the link to activate your account.
+          </p>
+          <DialogFooter className="sm:justify-center">
+            <Button onClick={() => { setShowVerifyDialog(false); setMode("login"); setStep(1); }} className="bg-gradient-primary">
+              Go to Sign In
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Right Side - Decorative */}
       <div className="hidden lg:flex flex-1 bg-gradient-hero items-center justify-center p-12">

@@ -24,6 +24,8 @@ import {
   MicOff,
   Volume2,
   VolumeX,
+  Copy,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/hooks/useVoice";
@@ -40,6 +42,21 @@ interface ChatSession {
 }
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button onClick={handleCopy} className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs">
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
 
 export default function Chat() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -459,13 +476,16 @@ export default function Chat() {
                       <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-hidden [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-3 [&_pre]:text-xs [&_code]:break-all [&_code]:text-xs">
                         <ReactMarkdown>{message.content || "..."}</ReactMarkdown>
                         {message.content && (
-                          <button
-                            onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
-                            className="mt-1 text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-                          >
-                            {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                            {isSpeaking ? "Stop" : "Listen"}
-                          </button>
+                          <div className="mt-1 flex items-center gap-3">
+                            <CopyButton text={message.content} />
+                            <button
+                              onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
+                            >
+                              {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                              {isSpeaking ? "Stop" : "Listen"}
+                            </button>
+                          </div>
                         )}
                       </div>
                     ) : (
