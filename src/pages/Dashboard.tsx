@@ -108,7 +108,7 @@ export default function Dashboard() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold mb-2">
-                {greeting()}, {profile?.full_name?.split(" ")[0] || "there"}! 👋
+                {greeting()}, {profile?.full_name ? (profile.full_name.trim().split(/\s+/).pop() || profile.full_name) : "there"}! 👋
               </h1>
               <p className="text-primary-foreground/80 max-w-lg">
                 Ready to continue your learning journey? Your AI tutor is here to help 
