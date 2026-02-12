@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import {
   Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot,
 } from "lucide-react";
-import { DLH_COURSES } from "@/lib/courses";
+import { DLH_COURSES, COURSE_CATEGORIES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 
@@ -205,7 +205,16 @@ export default function Admin() {
             <div className="space-y-4">
               <div><Label>Title *</Label><Input value={courseForm.title} onChange={(e) => setCourseForm(f => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
               <div><Label>Description</Label><Textarea value={courseForm.description} onChange={(e) => setCourseForm(f => ({ ...f, description: e.target.value }))} className="mt-1" rows={3} /></div>
-              <div><Label>Category</Label><Input value={courseForm.category} onChange={(e) => setCourseForm(f => ({ ...f, category: e.target.value }))} className="mt-1" /></div>
+              <div><Label>Category</Label>
+                <Select value={courseForm.category} onValueChange={(val) => setCourseForm(f => ({ ...f, category: val }))}>
+                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {COURSE_CATEGORIES.filter(c => c !== "All").map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div><Label>Image URL</Label><Input value={courseForm.image_url} onChange={(e) => setCourseForm(f => ({ ...f, image_url: e.target.value }))} className="mt-1" /></div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" checked={courseForm.is_published} onChange={(e) => setCourseForm(f => ({ ...f, is_published: e.target.checked }))} />
