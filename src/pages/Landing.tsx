@@ -1,19 +1,12 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { DLH_COURSES } from "@/lib/courses";
 import { DLHLogo } from "@/components/DLHLogo";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import {
-  MessageSquare,
-  Image,
-  Mic,
-  BookOpen,
-  Users,
-  Sparkles,
-  ArrowRight,
-  CheckCircle,
-  GraduationCap,
-  Brain,
+  MessageSquare, Image, Mic, BookOpen, Users, Sparkles, ArrowRight,
+  CheckCircle, GraduationCap, Brain, Mail, Phone, MapPin, Video, Music,
 } from "lucide-react";
 
 const features = [
@@ -59,6 +52,8 @@ const benefits = [
 ];
 
 export default function Landing() {
+  const { settings } = useSiteSettings();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -90,7 +85,7 @@ export default function Landing() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-dlh-blue-light text-primary text-sm font-medium mb-6">
                 <Sparkles size={16} />
-                AI-Powered Education Platform
+                {settings.site_tagline || "AI-Powered Education Platform"}
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                 Your Smart{" "}
@@ -125,10 +120,7 @@ export default function Landing() {
               className="flex-1 relative"
             >
               <div className="relative w-full max-w-lg mx-auto">
-                {/* Decorative background */}
                 <div className="absolute inset-0 bg-gradient-primary opacity-10 blur-3xl rounded-full" />
-                
-                {/* Chat preview card */}
                 <div className="relative bg-card rounded-2xl shadow-xl border border-border p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
@@ -139,7 +131,6 @@ export default function Landing() {
                       <p className="text-xs text-muted-foreground">AI Assistant</p>
                     </div>
                   </div>
-                  
                   <div className="space-y-4">
                     <div className="chat-bubble-ai max-w-[80%]">
                       <p className="text-sm">Hello! I'm your AI tutor. How can I help you learn today?</p>
@@ -172,15 +163,12 @@ export default function Landing() {
           >
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Everything You Need to{" "}
-              <span className="bg-gradient-primary bg-clip-text text-transparent">
-                Succeed
-              </span>
+              <span className="bg-gradient-primary bg-clip-text text-transparent">Succeed</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Powerful AI tools designed to enhance your learning experience
             </p>
           </motion.div>
-
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <motion.div
@@ -202,8 +190,73 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* DLH Videos Section */}
+      {(settings.demo_video_url || settings.anthem_video_url) && (
+        <section className="py-20 px-4">
+          <div className="container mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Watch{" "}
+                <span className="bg-gradient-primary bg-clip-text text-transparent">DLH</span>{" "}
+                in Action
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                See what Digital Learning Hub is all about
+              </p>
+            </motion.div>
+            <div className={`grid ${settings.demo_video_url && settings.anthem_video_url ? "md:grid-cols-2" : "max-w-3xl mx-auto"} gap-8`}>
+              {settings.demo_video_url && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="dlh-card overflow-hidden">
+                    <div className="p-4 border-b border-border flex items-center gap-2">
+                      <Video size={18} className="text-primary" />
+                      <h3 className="font-semibold">DLH Demo</h3>
+                    </div>
+                    <video
+                      src={settings.demo_video_url}
+                      controls
+                      className="w-full aspect-video bg-black"
+                      poster=""
+                    />
+                  </div>
+                </motion.div>
+              )}
+              {settings.anthem_video_url && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="dlh-card overflow-hidden">
+                    <div className="p-4 border-b border-border flex items-center gap-2">
+                      <Music size={18} className="text-primary" />
+                      <h3 className="font-semibold">DLH Anthem</h3>
+                    </div>
+                    <video
+                      src={settings.anthem_video_url}
+                      controls
+                      className="w-full aspect-video bg-black"
+                      poster=""
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Benefits Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             <motion.div
@@ -214,9 +267,7 @@ export default function Landing() {
             >
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 Learn Smarter,{" "}
-                <span className="bg-gradient-primary bg-clip-text text-transparent">
-                  Not Harder
-                </span>
+                <span className="bg-gradient-primary bg-clip-text text-transparent">Not Harder</span>
               </h2>
               <p className="text-muted-foreground mb-8">
                 DLH Smart Tutor combines cutting-edge AI technology with proven 
@@ -232,7 +283,6 @@ export default function Landing() {
                 ))}
               </div>
             </motion.div>
-
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -297,13 +347,63 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 border-t border-border">
-        <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <DLHLogo size="sm" />
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Digital Learning Hub. Made by Alikalie.
-          </p>
+      {/* Footer with Contact */}
+      <footer className="py-12 px-4 border-t border-border bg-muted/30">
+        <div className="container mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* Brand */}
+            <div>
+              <DLHLogo size="sm" />
+              <p className="text-sm text-muted-foreground mt-3">
+                {settings.site_tagline || "AI-Powered Education Platform"}
+              </p>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h4 className="font-semibold mb-3">Quick Links</h4>
+              <div className="space-y-2">
+                <Link to="/auth?mode=signup" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign Up</Link>
+                <Link to="/auth" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="font-semibold mb-3">Contact Us</h4>
+              <div className="space-y-2">
+                {settings.contact_email && (
+                  <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <Mail size={14} /> {settings.contact_email}
+                  </a>
+                )}
+                {settings.contact_phone && (
+                  <a href={`tel:${settings.contact_phone}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <Phone size={14} /> {settings.contact_phone}
+                  </a>
+                )}
+                {settings.contact_whatsapp && (
+                  <a href={`https://wa.me/${settings.contact_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <MessageSquare size={14} /> WhatsApp: {settings.contact_whatsapp}
+                  </a>
+                )}
+                {settings.contact_address && (
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin size={14} /> {settings.contact_address}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              {settings.footer_text || `© ${new Date().getFullYear()} Digital Learning Hub. Made by Alikalie.`}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Powered by DLH Smart Tutor AI
+            </p>
+          </div>
         </div>
       </footer>
     </div>
