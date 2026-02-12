@@ -16,7 +16,7 @@ export function useAdminRole() {
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
-      setIsAdmin(data?.some((r) => r.role === "admin") || false);
+      setIsAdmin(data?.some((r) => r.role === "admin" || r.role === "super_admin") || false);
     };
     check();
   }, [user]);
