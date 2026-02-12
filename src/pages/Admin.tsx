@@ -69,7 +69,7 @@ export default function Admin() {
   const checkAdmin = async () => {
     if (!user) return;
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-    const admin = data?.some((r) => r.role === "admin") || false;
+    const admin = data?.some((r) => r.role === "admin" || r.role === "super_admin") || false;
     setIsAdmin(admin);
     if (admin) { fetchUsers(); fetchCourses(); }
     else { setLoading(false); }
