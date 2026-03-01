@@ -12,31 +12,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
-  Loader2,
-  User,
-  Bell,
-  Shield,
-  Palette,
-  Save,
-  Camera,
+  Loader2, User, Bell, Shield, Palette, Save, Camera,
 } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { DLH_COURSES } from "@/lib/courses";
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
 
 export default function Settings() {
   const { profile, user, refreshProfile, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
   const { uploadAvatar, uploading } = useAvatarUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
+
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || "",
+    first_name: "",
+    last_name: "",
     phone_number: profile?.phone_number || "",
     country: profile?.country || "",
     bio: profile?.bio || "",
@@ -46,8 +50,12 @@ export default function Settings() {
   // Sync form when profile loads
   useEffect(() => {
     if (profile) {
+      const parts = (profile.full_name || "").trim().split(/\s+/);
+      const firstName = parts[0] || "";
+      const lastName = parts.slice(1).join(" ") || "";
       setFormData({
-        full_name: profile.full_name || "",
+        first_name: firstName,
+        last_name: lastName,
         phone_number: profile.phone_number || "",
         country: profile.country || "",
         bio: profile.bio || "",
@@ -55,6 +63,38 @@ export default function Settings() {
       });
     }
   }, [profile]);
+
+  // Fetch notifications
+  useEffect(() => {
+    if (user) fetchNotifications();
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    setNotifLoading(true);
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setNotifications(data || []);
+    setNotifLoading(false);
+  };
+
+  const markNotificationRead = async (id: string) => {
+    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+  };
+
+  const markAllRead = async () => {
+    if (!user) return;
+    const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+    for (const id of unreadIds) {
+      await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    }
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    toast.success("All notifications marked as read");
+  };
 
   const initials = profile?.full_name
     ? profile.full_name
@@ -78,10 +118,11 @@ export default function Settings() {
 
     setLoading(true);
     try {
+      const full_name = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: formData.full_name,
+          full_name,
           phone_number: formData.phone_number,
           country: formData.country,
           bio: formData.bio,
@@ -97,6 +138,28 @@ export default function Settings() {
       toast.error(error.message || "Failed to update profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordForm.newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("Passwords don't match");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
+      if (error) throw error;
+      toast.success("Password updated successfully");
+      setPasswordForm({ newPassword: "", confirmPassword: "" });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update password");
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -185,11 +248,21 @@ export default function Settings() {
               {/* Form */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="full_name">Full Name</Label>
+                  <Label htmlFor="first_name">First Name</Label>
                   <Input
-                    id="full_name"
-                    name="full_name"
-                    value={formData.full_name}
+                    id="first_name"
+                    name="first_name"
+                    value={formData.first_name}
+                    onChange={handleInputChange}
+                    className="mt-1 input-focus"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="last_name">Last Name</Label>
+                  <Input
+                    id="last_name"
+                    name="last_name"
+                    value={formData.last_name}
                     onChange={handleInputChange}
                     className="mt-1 input-focus"
                   />
@@ -268,43 +341,54 @@ export default function Settings() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="dlh-card p-6 space-y-6"
+              className="dlh-card p-6 space-y-4"
             >
-              <h2 className="text-lg font-semibold">Notification Preferences</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Your Notifications</h2>
+                {notifications.some(n => !n.is_read) && (
+                  <Button variant="outline" size="sm" onClick={markAllRead}>
+                    Mark all as read
+                  </Button>
+                )}
+              </div>
 
-              <div className="space-y-4">
-                {[
-                  {
-                    title: "Email Notifications",
-                    description: "Receive updates about your courses via email",
-                  },
-                  {
-                    title: "Push Notifications",
-                    description: "Get notified about new messages and activities",
-                  },
-                  {
-                    title: "Course Updates",
-                    description: "Be notified when new content is added to your courses",
-                  },
-                  {
-                    title: "Marketing Emails",
-                    description: "Receive tips, tutorials, and promotional content",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center justify-between py-3 border-b border-border last:border-0"
-                  >
-                    <div>
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.description}
+              {notifLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin" />
+                </div>
+              ) : notifications.length > 0 ? (
+                <div className="space-y-2">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`p-4 rounded-lg border transition-colors cursor-pointer ${
+                        n.is_read ? "border-border bg-muted/30" : "border-primary/30 bg-primary/5"
+                      }`}
+                      onClick={() => !n.is_read && markNotificationRead(n.id)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className={`font-medium text-sm ${!n.is_read ? "text-foreground" : "text-muted-foreground"}`}>
+                            {n.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
+                        </div>
+                        {!n.is_read && (
+                          <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1.5" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {new Date(n.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
-                    <Switch defaultChecked />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <Bell className="mx-auto mb-2 text-muted-foreground" size={32} />
+                  <p className="text-muted-foreground text-sm">No notifications yet</p>
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 
@@ -367,25 +451,46 @@ export default function Settings() {
                     <p className="text-sm text-muted-foreground mb-3">
                       Update your password to keep your account secure
                     </p>
-                    <Button variant="outline">Change Password</Button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-3 border-b border-border">
-                    <div>
-                      <p className="font-medium">Two-Factor Authentication</p>
-                      <p className="text-sm text-muted-foreground">
-                        Add an extra layer of security
-                      </p>
+                    <div className="grid gap-3 sm:grid-cols-2 max-w-md">
+                      <div>
+                        <Label htmlFor="new_password" className="text-xs">New Password</Label>
+                        <Input
+                          id="new_password"
+                          type="password"
+                          value={passwordForm.newPassword}
+                          onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                          placeholder="••••••••"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="confirm_new_password" className="text-xs">Confirm Password</Label>
+                        <Input
+                          id="confirm_new_password"
+                          type="password"
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                          placeholder="••••••••"
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
-                    <Switch />
+                    <Button
+                      variant="outline"
+                      className="mt-3"
+                      onClick={handleChangePassword}
+                      disabled={changingPassword}
+                    >
+                      {changingPassword ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      Update Password
+                    </Button>
                   </div>
 
                   <div className="py-3">
-                    <p className="font-medium mb-1">Active Sessions</p>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Manage devices where you're logged in
+                    <p className="font-medium mb-1">Account Email</p>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {user?.email}
                     </p>
-                    <Button variant="outline">Manage Sessions</Button>
                   </div>
                 </div>
               </div>
@@ -401,7 +506,6 @@ export default function Settings() {
                   <Button variant="outline" onClick={signOut}>
                     Sign Out
                   </Button>
-                  <Button variant="destructive">Delete Account</Button>
                 </div>
               </div>
             </motion.div>

@@ -96,6 +96,12 @@ export default function Dashboard() {
     return "Good evening";
   };
 
+  const getLastName = () => {
+    if (!profile?.full_name) return "there";
+    const parts = profile.full_name.trim().split(/\s+/);
+    return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+  };
+
   return (
     <DashboardLayout>
       <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-8">
@@ -108,12 +114,18 @@ export default function Dashboard() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold mb-2">
-                {greeting()}, {profile?.full_name ? profile.full_name.trim().split(/\s+/)[0] : "there"}! 👋
+                {greeting()}, {getLastName()}! 👋
               </h1>
               <p className="text-primary-foreground/80 max-w-lg">
                 Ready to continue your learning journey? Your AI tutor is here to help 
                 you with anything you need.
               </p>
+              {profile?.course_of_interest && (
+                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-sm">
+                  <BookOpen size={14} />
+                  <span>Primary Course: <strong>{profile.course_of_interest}</strong></span>
+                </div>
+              )}
             </div>
             <Link to="/chat">
               <Button variant="secondary" className="bg-white text-primary hover:bg-white/90">

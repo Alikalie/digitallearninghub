@@ -30,10 +30,15 @@ const loginSchema = z.object({
 });
 
 const signupSchema = z.object({
-  full_name: z.string().min(2, "Name must be at least 2 characters").max(100),
+  first_name: z.string().min(2, "First name must be at least 2 characters").max(50),
+  last_name: z.string().min(2, "Last name must be at least 2 characters").max(50),
   email: z.string().email("Please enter a valid email").max(255),
   phone_number: z.string().optional(),
-  password: z.string().min(6, "Password must be at least 6 characters").max(72),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72)
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
   confirm_password: z.string(),
   country: z.string().optional(),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
@@ -76,7 +81,8 @@ export default function Auth() {
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      full_name: "",
+      first_name: "",
+      last_name: "",
       email: "",
       phone_number: "",
       password: "",
@@ -95,11 +101,11 @@ export default function Auth() {
       const { error } = await signIn(data.email, data.password);
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
-          toast.error("Invalid email or password. Please try again.");
+          toast.error("Invalid email or password. Please try again.", { duration: 60000, position: "top-center" });
         } else if (error.message.includes("Email not confirmed")) {
-          toast.error("Please verify your email before signing in.");
+          toast.error("Please verify your email before signing in. Check your inbox for the verification link.", { duration: 60000, position: "top-center" });
         } else {
-          toast.error(error.message);
+          toast.error(error.message, { duration: 60000, position: "top-center" });
         }
       } else {
         toast.success("Welcome back!");
@@ -115,8 +121,9 @@ export default function Auth() {
   const handleSignup = async (data: SignupFormData) => {
     setLoading(true);
     try {
+      const full_name = `${data.first_name.trim()} ${data.last_name.trim()}`;
       const { error } = await signUp(data.email, data.password, {
-        full_name: data.full_name,
+        full_name,
         phone_number: data.phone_number,
         country: data.country,
         gender: data.gender,
@@ -125,10 +132,12 @@ export default function Auth() {
       });
 
       if (error) {
-        if (error.message.includes("already registered")) {
-          toast.error("This email is already registered. Please sign in instead.");
+        if (error.message.includes("already registered") || error.message.includes("User already registered")) {
+          toast.error("This email is already registered. Please sign in instead.", { duration: 60000, position: "top-center" });
+        } else if (error.message.includes("weak_password") || error.message.includes("password")) {
+          toast.error("Password is too weak. Use at least 8 characters with an uppercase letter and a number.", { duration: 60000, position: "top-center" });
         } else {
-          toast.error(error.message);
+          toast.error(error.message, { duration: 60000, position: "top-center" });
         }
       } else {
         setShowVerifyDialog(true);
@@ -142,7 +151,7 @@ export default function Auth() {
 
   const nextStep = async () => {
     const fields = step === 1
-      ? ["full_name", "email", "password", "confirm_password"]
+      ? ["first_name", "last_name", "email", "password", "confirm_password"]
       : ["user_type"];
     
     const isValid = await signupForm.trigger(fields as any);
@@ -252,19 +261,35 @@ export default function Auth() {
                       animate={{ opacity: 1, x: 0 }}
                       className="space-y-4"
                     >
-                      <div>
-                        <Label htmlFor="full_name">Full Name *</Label>
-                        <Input
-                          id="full_name"
-                          placeholder="John Doe"
-                          className="mt-1 input-focus"
-                          {...signupForm.register("full_name")}
-                        />
-                        {signupForm.formState.errors.full_name && (
-                          <p className="text-sm text-destructive mt-1">
-                            {signupForm.formState.errors.full_name.message}
-                          </p>
-                        )}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="first_name">First Name *</Label>
+                          <Input
+                            id="first_name"
+                            placeholder="John"
+                            className="mt-1 input-focus"
+                            {...signupForm.register("first_name")}
+                          />
+                          {signupForm.formState.errors.first_name && (
+                            <p className="text-sm text-destructive mt-1">
+                              {signupForm.formState.errors.first_name.message}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="last_name">Last Name *</Label>
+                          <Input
+                            id="last_name"
+                            placeholder="Doe"
+                            className="mt-1 input-focus"
+                            {...signupForm.register("last_name")}
+                          />
+                          {signupForm.formState.errors.last_name && (
+                            <p className="text-sm text-destructive mt-1">
+                              {signupForm.formState.errors.last_name.message}
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       <div>
@@ -301,6 +326,7 @@ export default function Auth() {
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                           </button>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">Min 8 chars, 1 uppercase, 1 number</p>
                         {signupForm.formState.errors.password && (
                           <p className="text-sm text-destructive mt-1">
                             {signupForm.formState.errors.password.message}
@@ -498,6 +524,9 @@ export default function Auth() {
           </DialogHeader>
           <p className="text-muted-foreground text-sm">
             We've sent a verification link to your email address. Please check your inbox (and spam folder) and click the link to activate your account.
+          </p>
+          <p className="text-xs text-muted-foreground font-medium">
+            You must verify your email before you can sign in.
           </p>
           <DialogFooter className="sm:justify-center">
             <Button onClick={() => { setShowVerifyDialog(false); setMode("login"); setStep(1); }} className="bg-gradient-primary">

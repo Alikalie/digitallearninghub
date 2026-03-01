@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2,
+  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload,
 } from "lucide-react";
 import { DLH_COURSES, COURSE_CATEGORIES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
@@ -63,6 +63,8 @@ export default function Admin() {
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courseForm, setCourseForm] = useState({ title: "", description: "", category: "", image_url: "", is_published: true });
+  const [uploadingCourseImg, setUploadingCourseImg] = useState(false);
+  const courseImgRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { checkAdmin(); }, [user]);
 
@@ -95,6 +97,22 @@ export default function Admin() {
       setCourseForm({ title: "", description: "", category: "", image_url: "", is_published: true });
     }
     setCourseDialogOpen(true);
+  };
+
+  const uploadCourseImage = async (file: File) => {
+    setUploadingCourseImg(true);
+    const ext = file.name.split(".").pop();
+    const path = `course-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("course-images").upload(path, file, { upsert: true });
+    if (error) {
+      toast.error("Upload failed: " + error.message);
+      setUploadingCourseImg(false);
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("course-images").getPublicUrl(path);
+    setCourseForm(f => ({ ...f, image_url: urlData.publicUrl }));
+    toast.success("Image uploaded!");
+    setUploadingCourseImg(false);
   };
 
   const saveCourse = async () => {
@@ -171,6 +189,7 @@ export default function Admin() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Published</TableHead>
@@ -180,6 +199,15 @@ export default function Admin() {
                 <TableBody>
                   {courses.map((c) => (
                     <TableRow key={c.id}>
+                      <TableCell>
+                        {c.image_url ? (
+                          <img src={c.image_url} alt="" className="w-10 h-10 rounded object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                            <BookOpen size={16} className="text-muted-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium max-w-[200px] truncate">{c.title}</TableCell>
                       <TableCell><Badge variant="outline" className="text-xs">{c.category || "—"}</Badge></TableCell>
                       <TableCell>{c.is_published ? <Badge className="bg-dlh-success/10 text-dlh-success border-0 text-xs">Live</Badge> : <Badge variant="secondary" className="text-xs">Draft</Badge>}</TableCell>
@@ -206,7 +234,7 @@ export default function Admin() {
         </Tabs>
 
         <Dialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingCourse ? "Edit Course" : "Add Course"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div><Label>Title *</Label><Input value={courseForm.title} onChange={(e) => setCourseForm(f => ({ ...f, title: e.target.value }))} className="mt-1" /></div>
@@ -221,7 +249,20 @@ export default function Admin() {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Image URL</Label><Input value={courseForm.image_url} onChange={(e) => setCourseForm(f => ({ ...f, image_url: e.target.value }))} className="mt-1" /></div>
+              <div>
+                <Label>Course Image</Label>
+                {courseForm.image_url && (
+                  <img src={courseForm.image_url} alt="" className="w-full h-32 object-cover rounded-lg border border-border mt-1 mb-2" />
+                )}
+                <input ref={courseImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) uploadCourseImage(e.target.files[0]); }} />
+                <div className="flex gap-2 mt-1">
+                  <Button type="button" variant="outline" size="sm" onClick={() => courseImgRef.current?.click()} disabled={uploadingCourseImg} className="flex-1">
+                    {uploadingCourseImg ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                    Upload Image
+                  </Button>
+                </div>
+                <Input value={courseForm.image_url} onChange={(e) => setCourseForm(f => ({ ...f, image_url: e.target.value }))} className="mt-2 text-xs" placeholder="Or paste image URL..." />
+              </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" checked={courseForm.is_published} onChange={(e) => setCourseForm(f => ({ ...f, is_published: e.target.checked }))} />
                 <Label>Published</Label>

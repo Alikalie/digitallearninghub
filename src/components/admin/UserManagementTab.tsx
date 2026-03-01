@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
-  Search, Eye, EyeOff, Shield, Pencil, Trash2, UserPlus, Mail, Phone, Globe,
+  Search, Eye, EyeOff, Shield, Pencil, Trash2, BookOpen,
 } from "lucide-react";
 
 interface Profile {
@@ -38,6 +38,11 @@ interface Profile {
   avatar_url: string | null;
 }
 
+interface UserRole {
+  user_id: string;
+  role: string;
+}
+
 interface Props {
   users: Profile[];
   onRefresh: () => void;
@@ -48,6 +53,7 @@ export function UserManagementTab({ users, onRefresh }: Props) {
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [userRoles, setUserRoles] = useState<Record<string, string>>({});
   const [editForm, setEditForm] = useState({
     full_name: "",
     email: "",
@@ -56,6 +62,19 @@ export function UserManagementTab({ users, onRefresh }: Props) {
     user_type: "student",
     course_of_interest: "",
   });
+
+  // Fetch roles for all users
+  useEffect(() => {
+    const fetchRoles = async () => {
+      const { data } = await supabase.from("user_roles").select("user_id, role");
+      if (data) {
+        const rolesMap: Record<string, string> = {};
+        data.forEach((r: UserRole) => { rolesMap[r.user_id] = r.role; });
+        setUserRoles(rolesMap);
+      }
+    };
+    if (users.length > 0) fetchRoles();
+  }, [users]);
 
   const filteredUsers = users.filter(
     (u) =>
@@ -116,7 +135,6 @@ export function UserManagementTab({ users, onRefresh }: Props) {
 
   const deleteUser = async () => {
     if (!deleteUserId) return;
-    // Delete profile (cascading from auth would need service role, just remove profile)
     const { error } = await supabase
       .from("profiles")
       .delete()
@@ -128,14 +146,13 @@ export function UserManagementTab({ users, onRefresh }: Props) {
   };
 
   const changeUserRole = async (userId: string, newRole: string) => {
-    // First delete existing roles
     await supabase.from("user_roles").delete().eq("user_id", userId);
-    // Insert new role
     const { error } = await supabase
       .from("user_roles")
       .insert({ user_id: userId, role: newRole as any });
     if (error) { toast.error("Failed to change role"); return; }
     toast.success(`Role changed to ${newRole}`);
+    setUserRoles(prev => ({ ...prev, [userId]: newRole }));
     onRefresh();
   };
 
@@ -154,8 +171,10 @@ export function UserManagementTab({ users, onRefresh }: Props) {
             <TableRow>
               <TableHead className="min-w-[140px]">Name</TableHead>
               <TableHead className="min-w-[180px]">Email</TableHead>
-              <TableHead className="min-w-[80px]">Type</TableHead>
+              <TableHead className="min-w-[80px]">Role</TableHead>
+              <TableHead className="min-w-[120px]">Course</TableHead>
               <TableHead className="min-w-[100px]">Status</TableHead>
+              <TableHead className="min-w-[80px]">Joined</TableHead>
               <TableHead className="min-w-[200px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -175,13 +194,30 @@ export function UserManagementTab({ users, onRefresh }: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-xs">{u.email}</TableCell>
-                <TableCell><Badge variant="outline" className="capitalize text-xs">{u.user_type || "student"}</Badge></TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="capitalize text-xs">
+                    {userRoles[u.user_id] || u.user_type || "student"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {u.course_of_interest ? (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <BookOpen size={12} />
+                      <span className="truncate max-w-[100px]">{u.course_of_interest}</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
                     {u.is_verified && <Badge className="bg-dlh-success/10 text-dlh-success border-0 text-xs">Verified</Badge>}
                     {u.is_suspended && <Badge variant="destructive" className="text-xs">Suspended</Badge>}
                     {!u.is_verified && !u.is_suspended && <Badge variant="secondary" className="text-xs">Pending</Badge>}
                   </div>
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {new Date(u.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
@@ -198,13 +234,14 @@ export function UserManagementTab({ users, onRefresh }: Props) {
                       <Trash2 size={14} />
                     </Button>
                     <Select onValueChange={(val) => changeUserRole(u.user_id, val)}>
-                      <SelectTrigger className="h-8 w-[90px] text-xs">
+                      <SelectTrigger className="h-8 w-[100px] text-xs">
                         <SelectValue placeholder="Role" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="student">Student</SelectItem>
                         <SelectItem value="tutor">Tutor</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="super_admin">Super Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

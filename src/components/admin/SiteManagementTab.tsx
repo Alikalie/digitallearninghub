@@ -55,28 +55,34 @@ export function SiteManagementTab() {
     setLoading(false);
   };
 
+  const upsertSetting = async (key: string, value: string) => {
+    // Use upsert with the unique key constraint
+    const { error } = await supabase
+      .from("admin_settings")
+      .upsert(
+        { key, value: value as any, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+    return error;
+  };
+
   const saveSettings = async () => {
     setSaving(true);
     const keys = Object.keys(form) as (keyof SettingsForm)[];
+    let hasError = false;
     for (const key of keys) {
-      const { data: existing } = await supabase
-        .from("admin_settings")
-        .select("id")
-        .eq("key", key)
-        .maybeSingle();
-      if (existing) {
-        await supabase
-          .from("admin_settings")
-          .update({ value: form[key] as any, updated_at: new Date().toISOString() })
-          .eq("key", key);
-      } else {
-        await supabase
-          .from("admin_settings")
-          .insert({ key, value: form[key] as any });
+      const error = await upsertSetting(key, form[key]);
+      if (error) {
+        console.error(`Failed to save ${key}:`, error);
+        hasError = true;
       }
     }
     setSaving(false);
-    toast.success("Site settings saved!");
+    if (hasError) {
+      toast.error("Some settings failed to save. Please try again.");
+    } else {
+      toast.success("All site settings saved successfully! Changes are now live for all users.");
+    }
   };
 
   const uploadVideo = async (file: File, type: "demo" | "anthem") => {
@@ -93,15 +99,9 @@ export function SiteManagementTab() {
     const { data: urlData } = supabase.storage.from("dlh-videos").getPublicUrl(path);
     const url = urlData.publicUrl;
     setForm((f) => ({ ...f, [`${type}_video_url`]: url }));
-    // Save immediately
     const key = `${type}_video_url`;
-    const { data: existing } = await supabase.from("admin_settings").select("id").eq("key", key).maybeSingle();
-    if (existing) {
-      await supabase.from("admin_settings").update({ value: url as any, updated_at: new Date().toISOString() }).eq("key", key);
-    } else {
-      await supabase.from("admin_settings").insert({ key, value: url as any });
-    }
-    toast.success(`${type === "demo" ? "Demo" : "Anthem"} video uploaded!`);
+    await upsertSetting(key, url);
+    toast.success(`${type === "demo" ? "Demo" : "Anthem"} video uploaded and saved!`);
     setUploading(false);
   };
 
@@ -112,7 +112,7 @@ export function SiteManagementTab() {
       {/* Contact Information */}
       <div className="dlh-card p-6">
         <h3 className="font-semibold text-lg mb-4 flex items-center gap-2"><Phone size={20} /> Contact Information</h3>
-        <p className="text-sm text-muted-foreground mb-4">This information will appear in the website footer for students to contact admins.</p>
+        <p className="text-sm text-muted-foreground mb-4">This information will appear in the website footer for all visitors.</p>
         <div className="grid sm:grid-cols-2 gap-4">
           <div><Label className="flex items-center gap-1"><Mail size={14} /> Email</Label><Input value={form.contact_email} onChange={(e) => setForm(f => ({ ...f, contact_email: e.target.value }))} className="mt-1" /></div>
           <div><Label className="flex items-center gap-1"><Phone size={14} /> Phone</Label><Input value={form.contact_phone} onChange={(e) => setForm(f => ({ ...f, contact_phone: e.target.value }))} className="mt-1" /></div>
