@@ -60,12 +60,18 @@ export default function Landing() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <DLHLogo size="sm" />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
+              About
+            </Link>
+            <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
+              Contact
+            </Link>
             <Link to="/auth">
-              <Button variant="ghost">Sign In</Button>
+              <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
             <Link to="/auth?mode=signup">
-              <Button className="bg-gradient-primary hover:opacity-90 transition-opacity">
+              <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity">
                 Get Started
               </Button>
             </Link>
@@ -363,6 +369,8 @@ export default function Landing() {
             <div>
               <h4 className="font-semibold mb-3">Quick Links</h4>
               <div className="space-y-2">
+                <Link to="/about" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
+                <Link to="/contact" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
                 <Link to="/auth?mode=signup" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign Up</Link>
                 <Link to="/auth" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
               </div>
