@@ -67,6 +67,9 @@ export default function Landing() {
             <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
               Contact
             </Link>
+            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
+              FAQ
+            </Link>
             <Link to="/auth">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
@@ -371,6 +374,7 @@ export default function Landing() {
               <div className="space-y-2">
                 <Link to="/about" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
                 <Link to="/contact" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
+                <Link to="/faq" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Help / FAQ</Link>
                 <Link to="/auth?mode=signup" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign Up</Link>
                 <Link to="/auth" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
               </div>
@@ -408,9 +412,9 @@ export default function Landing() {
             <p className="text-sm text-muted-foreground">
               {settings.footer_text || `© ${new Date().getFullYear()} Digital Learning Hub. Made by Alikalie.`}
             </p>
-            <p className="text-xs text-muted-foreground">
-              Powered by DLH Smart Tutor AI
-            </p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              Powered by <DLHLogo size="sm" />
+            </div>
           </div>
         </div>
       </footer>
