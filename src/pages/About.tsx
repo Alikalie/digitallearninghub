@@ -146,7 +146,9 @@ export default function About() {
 
       <footer className="py-8 px-4 border-t border-border bg-muted/30">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <DLHLogo size="sm" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            Powered by <DLHLogo size="sm" />
+          </div>
           <p className="text-sm text-muted-foreground">
             {settings.footer_text || `© ${new Date().getFullYear()} Digital Learning Hub. Made by Alikalie.`}
           </p>
