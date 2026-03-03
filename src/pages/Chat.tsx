@@ -520,12 +520,12 @@ export default function Chat() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-4 border-t border-border bg-background">
-            <div className="max-w-3xl mx-auto flex gap-2">
+          <div className="p-2 sm:p-4 border-t border-border bg-background">
+            <div className="max-w-3xl mx-auto flex gap-1 sm:gap-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn("h-[52px] w-[52px] flex-shrink-0", isListening && "text-destructive animate-pulse")}
+                className={cn("h-10 w-10 sm:h-[52px] sm:w-[52px] flex-shrink-0", isListening && "text-destructive animate-pulse")}
                 onClick={() => {
                   if (isListening) {
                     stopListening();
@@ -543,7 +543,7 @@ export default function Chat() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={isListening ? "Listening..." : "Type your message..."}
-                className="min-h-[52px] max-h-32 resize-none input-focus"
+                className="min-h-[40px] sm:min-h-[52px] max-h-32 resize-none input-focus text-sm sm:text-base"
                 rows={1}
               />
               <Button
