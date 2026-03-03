@@ -262,10 +262,19 @@ export default function Chat() {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: [...messages, newUserMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: [...messages, newUserMessage].map((m, i, arr) => {
+            // For the last user message, include image if present
+            if (i === arr.length - 1 && m.role === "user" && imageBase64) {
+              return {
+                role: m.role,
+                content: [
+                  { type: "text", text: m.content },
+                  { type: "image_url", image_url: { url: imageBase64 } },
+                ],
+              };
+            }
+            return { role: m.role, content: m.content };
+          }),
           courseId: courseId || undefined,
         }),
       });

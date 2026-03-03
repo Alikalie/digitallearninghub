@@ -162,11 +162,11 @@ export default function Contact() {
                   </div>
                   <div>
                     <Label htmlFor="subject">Subject</Label>
-                    <Input id="subject" required placeholder="How can we help?" className="mt-1 input-focus" />
+                    <Input id="subject" name="subject" required placeholder="How can we help?" className="mt-1 input-focus" />
                   </div>
                   <div>
                     <Label htmlFor="message">Message</Label>
-                    <Textarea id="message" required placeholder="Tell us more..." rows={5} className="mt-1 input-focus" />
+                    <Textarea id="message" name="message" required placeholder="Tell us more..." rows={5} className="mt-1 input-focus" />
                   </div>
                   <Button type="submit" disabled={sending} className="w-full bg-gradient-primary hover:opacity-90">
                     {sending ? "Sending..." : <>

@@ -233,6 +233,10 @@ export default function Admin() {
           <TabsContent value="site">
             <SiteManagementTab />
           </TabsContent>
+
+          <TabsContent value="messages">
+            <ContactMessagesTab />
+          </TabsContent>
         </Tabs>
 
         <Dialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen}>
