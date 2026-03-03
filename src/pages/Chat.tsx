@@ -212,9 +212,19 @@ export default function Chat() {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading || !user) return;
+    if ((!input.trim() && !imageFile) || isLoading || !user) return;
 
-    const userMessage = input.trim();
+    let userMessage = input.trim();
+    
+    // If image is attached, convert to base64 and include description
+    let imageBase64: string | null = null;
+    if (imageFile) {
+      imageBase64 = imagePreview;
+      if (!userMessage) userMessage = "What can you see in this image?";
+      setImageFile(null);
+      setImagePreview(null);
+    }
+    
     setInput("");
     setIsLoading(true);
 
