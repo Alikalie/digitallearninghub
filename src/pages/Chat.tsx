@@ -466,7 +466,7 @@ export default function Chat() {
                   )}
                   <div
                     className={cn(
-                      "max-w-[85%] sm:max-w-[80%] rounded-2xl px-3 sm:px-4 py-3 overflow-hidden",
+                      "max-w-[95%] sm:max-w-[85%] lg:max-w-[80%] rounded-2xl px-3 sm:px-4 py-3 overflow-hidden",
                       message.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-muted rounded-bl-md"
