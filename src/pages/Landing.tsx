@@ -1,12 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { DLH_COURSES } from "@/lib/courses";
 import { DLHLogo } from "@/components/DLHLogo";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import {
   MessageSquare, Image, Mic, BookOpen, Users, Sparkles, ArrowRight,
-  CheckCircle, GraduationCap, Brain, Mail, Phone, MapPin, Video, Music,
+  CheckCircle, GraduationCap, Brain, Video, Music, Menu, X,
 } from "lucide-react";
 
 const features = [
@@ -53,37 +54,57 @@ const benefits = [
 
 export default function Landing() {
   const { settings } = useSiteSettings();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
           <DLHLogo size="sm" />
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
-              About
-            </Link>
-            <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
-              Contact
-            </Link>
-            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
-              FAQ
-            </Link>
-            <Link to="/auth">
-              <Button variant="ghost" size="sm">Sign In</Button>
-            </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden sm:flex items-center gap-4">
+            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
+            <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
+            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
+            <Link to="/auth"><Button variant="ghost" size="sm">Sign In</Button></Link>
             <Link to="/auth?mode=signup">
-              <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity">
-                Get Started
-              </Button>
+              <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity">Get Started</Button>
             </Link>
           </div>
+
+          {/* Mobile toggle */}
+          <button className="sm:hidden text-foreground p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="sm:hidden bg-background border-t border-border overflow-hidden"
+            >
+              <div className="px-4 py-3 space-y-2">
+                <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">About</Link>
+                <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">Contact</Link>
+                <Link to="/faq" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">FAQ</Link>
+                <div className="flex gap-2 pt-2">
+                  <Link to="/auth" className="flex-1"><Button variant="outline" size="sm" className="w-full">Sign In</Button></Link>
+                  <Link to="/auth?mode=signup" className="flex-1"><Button size="sm" className="w-full bg-gradient-primary">Get Started</Button></Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 overflow-hidden">
+      <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 px-4 overflow-hidden">
         <div className="container mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             <motion.div
@@ -356,68 +377,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer with Contact */}
-      <footer className="py-12 px-4 border-t border-border bg-muted/30">
-        <div className="container mx-auto">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
-            {/* Brand */}
-            <div>
-              <DLHLogo size="sm" />
-              <p className="text-sm text-muted-foreground mt-3">
-                {settings.site_tagline || "AI-Powered Education Platform"}
-              </p>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h4 className="font-semibold mb-3">Quick Links</h4>
-              <div className="space-y-2">
-                <Link to="/about" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
-                <Link to="/contact" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
-                <Link to="/faq" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Help / FAQ</Link>
-                <Link to="/auth?mode=signup" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign Up</Link>
-                <Link to="/auth" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
-              </div>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-semibold mb-3">Contact Us</h4>
-              <div className="space-y-2">
-                {settings.contact_email && (
-                  <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <Mail size={14} /> {settings.contact_email}
-                  </a>
-                )}
-                {settings.contact_phone && (
-                  <a href={`tel:${settings.contact_phone}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <Phone size={14} /> {settings.contact_phone}
-                  </a>
-                )}
-                {settings.contact_whatsapp && (
-                  <a href={`https://wa.me/${settings.contact_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <MessageSquare size={14} /> WhatsApp: {settings.contact_whatsapp}
-                  </a>
-                )}
-                {settings.contact_address && (
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin size={14} /> {settings.contact_address}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              {settings.footer_text || `© ${new Date().getFullYear()} Digital Learning Hub. Made by Alikalie.`}
-            </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              Powered by <DLHLogo size="sm" />
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
