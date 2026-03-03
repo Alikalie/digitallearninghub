@@ -520,9 +520,45 @@ export default function Chat() {
             </div>
           </ScrollArea>
 
+          {/* Image preview */}
+          {imagePreview && (
+            <div className="px-2 sm:px-4 pt-2 bg-background border-t border-border">
+              <div className="max-w-3xl mx-auto flex items-center gap-2">
+                <img src={imagePreview} alt="Upload preview" className="h-16 w-16 rounded-lg object-cover border border-border" />
+                <Button variant="ghost" size="sm" onClick={() => { setImagePreview(null); setImageFile(null); }}>
+                  <X size={14} />
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-2 sm:p-4 border-t border-border bg-background">
             <div className="max-w-3xl mx-auto flex gap-1 sm:gap-2">
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImageFile(file);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 sm:h-[52px] sm:w-[52px] flex-shrink-0"
+                onClick={() => imageInputRef.current?.click()}
+                title="Upload image"
+              >
+                <ImageIcon size={20} />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -549,7 +585,7 @@ export default function Chat() {
               />
               <Button
                 onClick={sendMessage}
-                disabled={!input.trim() || isLoading}
+                disabled={(!input.trim() && !imageFile) || isLoading}
                 className="bg-gradient-primary hover:opacity-90 h-10 sm:h-[52px] px-3 sm:px-4"
               >
                 {isLoading ? (
