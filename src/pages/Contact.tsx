@@ -17,14 +17,24 @@ export default function Contact() {
   const { settings } = useSiteSettings();
   const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
-      toast.success("Message sent! We'll get back to you shortly.");
-      (e.target as HTMLFormElement).reset();
-    }, 1500);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const { error } = await supabase.from("contact_messages").insert({
+      name: formData.get("name") as string,
+      email: formData.get("contact_email") as string,
+      subject: formData.get("subject") as string,
+      message: formData.get("message") as string,
+    });
+    setSending(false);
+    if (error) {
+      toast.error("Failed to send message. Please try again.");
+      return;
+    }
+    toast.success("Message sent! We'll get back to you shortly.");
+    form.reset();
   };
 
   const contactMethods = [
