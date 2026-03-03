@@ -1,12 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { DLH_COURSES } from "@/lib/courses";
 import { DLHLogo } from "@/components/DLHLogo";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import {
   MessageSquare, Image, Mic, BookOpen, Users, Sparkles, ArrowRight,
-  CheckCircle, GraduationCap, Brain, Mail, Phone, MapPin, Video, Music,
+  CheckCircle, GraduationCap, Brain, Video, Music, Menu, X,
 } from "lucide-react";
 
 const features = [
