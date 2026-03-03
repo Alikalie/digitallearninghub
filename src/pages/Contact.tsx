@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Mail, Phone, MessageSquare, MapPin, Send, ArrowLeft,
   Globe, Clock, HeadphonesIcon,
@@ -17,14 +18,24 @@ export default function Contact() {
   const { settings } = useSiteSettings();
   const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
-      toast.success("Message sent! We'll get back to you shortly.");
-      (e.target as HTMLFormElement).reset();
-    }, 1500);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const { error } = await supabase.from("contact_messages").insert({
+      name: formData.get("name") as string,
+      email: formData.get("contact_email") as string,
+      subject: formData.get("subject") as string,
+      message: formData.get("message") as string,
+    });
+    setSending(false);
+    if (error) {
+      toast.error("Failed to send message. Please try again.");
+      return;
+    }
+    toast.success("Message sent! We'll get back to you shortly.");
+    form.reset();
   };
 
   const contactMethods = [
@@ -142,20 +153,20 @@ export default function Contact() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Full Name</Label>
-                      <Input id="name" required placeholder="Your name" className="mt-1 input-focus" />
+                      <Input id="name" name="name" required placeholder="Your name" className="mt-1 input-focus" />
                     </div>
                     <div>
                       <Label htmlFor="contact_email">Email</Label>
-                      <Input id="contact_email" type="email" required placeholder="you@example.com" className="mt-1 input-focus" />
+                      <Input id="contact_email" name="contact_email" type="email" required placeholder="you@example.com" className="mt-1 input-focus" />
                     </div>
                   </div>
                   <div>
                     <Label htmlFor="subject">Subject</Label>
-                    <Input id="subject" required placeholder="How can we help?" className="mt-1 input-focus" />
+                    <Input id="subject" name="subject" required placeholder="How can we help?" className="mt-1 input-focus" />
                   </div>
                   <div>
                     <Label htmlFor="message">Message</Label>
-                    <Textarea id="message" required placeholder="Tell us more..." rows={5} className="mt-1 input-focus" />
+                    <Textarea id="message" name="message" required placeholder="Tell us more..." rows={5} className="mt-1 input-focus" />
                   </div>
                   <Button type="submit" disabled={sending} className="w-full bg-gradient-primary hover:opacity-90">
                     {sending ? "Sending..." : <>

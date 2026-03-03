@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Shield,
 } from "lucide-react";
+import { MobileTabBar } from "./MobileTabBar";
 
 const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -199,10 +200,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pb-14 lg:pb-0">
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <MobileTabBar />
     </div>
   );
 }

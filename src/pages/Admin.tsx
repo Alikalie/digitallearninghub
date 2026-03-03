@@ -20,12 +20,13 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload,
+  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload, Mail,
 } from "lucide-react";
 import { DLH_COURSES, COURSE_CATEGORIES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 import { SiteManagementTab } from "@/components/admin/SiteManagementTab";
+import { ContactMessagesTab } from "@/components/admin/ContactMessagesTab";
 
 interface Profile {
   id: string;
@@ -172,6 +173,7 @@ export default function Admin() {
             <TabsTrigger value="courses" className="gap-2"><BookOpen size={16} />Courses</TabsTrigger>
             <TabsTrigger value="bot" className="gap-2"><Bot size={16} />Bot Knowledge</TabsTrigger>
             <TabsTrigger value="site" className="gap-2"><Settings2 size={16} />Site Management</TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2"><Mail size={16} />Messages</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -230,6 +232,10 @@ export default function Admin() {
 
           <TabsContent value="site">
             <SiteManagementTab />
+          </TabsContent>
+
+          <TabsContent value="messages">
+            <ContactMessagesTab />
           </TabsContent>
         </Tabs>
 
