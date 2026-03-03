@@ -72,6 +72,9 @@ export default function Chat() {
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { isListening, isSpeaking, startListening, stopListening, speak, stopSpeaking } = useVoice();
 
   useEffect(() => {
