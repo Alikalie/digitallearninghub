@@ -26,6 +26,7 @@ import { DLH_COURSES, COURSE_CATEGORIES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 import { SiteManagementTab } from "@/components/admin/SiteManagementTab";
+import { ContactMessagesTab } from "@/components/admin/ContactMessagesTab";
 
 interface Profile {
   id: string;
