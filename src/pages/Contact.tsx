@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Mail, Phone, MessageSquare, MapPin, Send, ArrowLeft,
   Globe, Clock, HeadphonesIcon,
