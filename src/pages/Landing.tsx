@@ -104,7 +104,7 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 overflow-hidden">
+      <section className="pt-24 sm:pt-32 pb-16 sm:pb-20 px-4 overflow-hidden">
         <div className="container mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             <motion.div
