@@ -173,6 +173,7 @@ export default function Admin() {
             <TabsTrigger value="courses" className="gap-2"><BookOpen size={16} />Courses</TabsTrigger>
             <TabsTrigger value="bot" className="gap-2"><Bot size={16} />Bot Knowledge</TabsTrigger>
             <TabsTrigger value="site" className="gap-2"><Settings2 size={16} />Site Management</TabsTrigger>
+            <TabsTrigger value="messages" className="gap-2"><Mail size={16} />Messages</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
