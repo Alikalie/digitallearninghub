@@ -26,6 +26,7 @@ import {
   VolumeX,
   Copy,
   Check,
+  ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/hooks/useVoice";
