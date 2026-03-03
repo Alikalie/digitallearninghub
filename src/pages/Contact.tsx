@@ -153,11 +153,11 @@ export default function Contact() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name">Full Name</Label>
-                      <Input id="name" required placeholder="Your name" className="mt-1 input-focus" />
+                      <Input id="name" name="name" required placeholder="Your name" className="mt-1 input-focus" />
                     </div>
                     <div>
                       <Label htmlFor="contact_email">Email</Label>
-                      <Input id="contact_email" type="email" required placeholder="you@example.com" className="mt-1 input-focus" />
+                      <Input id="contact_email" name="contact_email" type="email" required placeholder="you@example.com" className="mt-1 input-focus" />
                     </div>
                   </div>
                   <div>
