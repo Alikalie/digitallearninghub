@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Shield,
 } from "lucide-react";
+import { MobileTabBar } from "./MobileTabBar";
 
 const baseNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
