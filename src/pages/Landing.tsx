@@ -54,33 +54,53 @@ const benefits = [
 
 export default function Landing() {
   const { settings } = useSiteSettings();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
           <DLHLogo size="sm" />
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
-              About
-            </Link>
-            <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
-              Contact
-            </Link>
-            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline">
-              FAQ
-            </Link>
-            <Link to="/auth">
-              <Button variant="ghost" size="sm">Sign In</Button>
-            </Link>
+
+          {/* Desktop nav */}
+          <div className="hidden sm:flex items-center gap-4">
+            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
+            <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
+            <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
+            <Link to="/auth"><Button variant="ghost" size="sm">Sign In</Button></Link>
             <Link to="/auth?mode=signup">
-              <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity">
-                Get Started
-              </Button>
+              <Button size="sm" className="bg-gradient-primary hover:opacity-90 transition-opacity">Get Started</Button>
             </Link>
           </div>
+
+          {/* Mobile toggle */}
+          <button className="sm:hidden text-foreground p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="sm:hidden bg-background border-t border-border overflow-hidden"
+            >
+              <div className="px-4 py-3 space-y-2">
+                <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">About</Link>
+                <Link to="/contact" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">Contact</Link>
+                <Link to="/faq" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm text-muted-foreground hover:text-foreground">FAQ</Link>
+                <div className="flex gap-2 pt-2">
+                  <Link to="/auth" className="flex-1"><Button variant="outline" size="sm" className="w-full">Sign In</Button></Link>
+                  <Link to="/auth?mode=signup" className="flex-1"><Button size="sm" className="w-full bg-gradient-primary">Get Started</Button></Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}
