@@ -549,7 +549,7 @@ export default function Chat() {
               <Button
                 onClick={sendMessage}
                 disabled={!input.trim() || isLoading}
-                className="bg-gradient-primary hover:opacity-90 h-[52px] px-4"
+                className="bg-gradient-primary hover:opacity-90 h-10 sm:h-[52px] px-3 sm:px-4"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />

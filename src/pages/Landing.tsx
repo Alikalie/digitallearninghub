@@ -377,68 +377,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer with Contact */}
-      <footer className="py-12 px-4 border-t border-border bg-muted/30">
-        <div className="container mx-auto">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
-            {/* Brand */}
-            <div>
-              <DLHLogo size="sm" />
-              <p className="text-sm text-muted-foreground mt-3">
-                {settings.site_tagline || "AI-Powered Education Platform"}
-              </p>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h4 className="font-semibold mb-3">Quick Links</h4>
-              <div className="space-y-2">
-                <Link to="/about" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">About Us</Link>
-                <Link to="/contact" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link>
-                <Link to="/faq" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Help / FAQ</Link>
-                <Link to="/auth?mode=signup" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign Up</Link>
-                <Link to="/auth" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link>
-              </div>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <h4 className="font-semibold mb-3">Contact Us</h4>
-              <div className="space-y-2">
-                {settings.contact_email && (
-                  <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <Mail size={14} /> {settings.contact_email}
-                  </a>
-                )}
-                {settings.contact_phone && (
-                  <a href={`tel:${settings.contact_phone}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <Phone size={14} /> {settings.contact_phone}
-                  </a>
-                )}
-                {settings.contact_whatsapp && (
-                  <a href={`https://wa.me/${settings.contact_whatsapp.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <MessageSquare size={14} /> WhatsApp: {settings.contact_whatsapp}
-                  </a>
-                )}
-                {settings.contact_address && (
-                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin size={14} /> {settings.contact_address}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              {settings.footer_text || `© ${new Date().getFullYear()} Digital Learning Hub. Made by Alikalie.`}
-            </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              Powered by <DLHLogo size="sm" />
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
