@@ -20,13 +20,15 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload, Mail,
+  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload, Mail, HelpCircle, Bell,
 } from "lucide-react";
 import { DLH_COURSES, COURSE_CATEGORIES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 import { SiteManagementTab } from "@/components/admin/SiteManagementTab";
 import { ContactMessagesTab } from "@/components/admin/ContactMessagesTab";
+import { FAQManagementTab } from "@/components/admin/FAQManagementTab";
+import { NotificationSenderTab } from "@/components/admin/NotificationSenderTab";
 
 interface Profile {
   id: string;
