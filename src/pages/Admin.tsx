@@ -241,6 +241,14 @@ export default function Admin() {
           <TabsContent value="messages">
             <ContactMessagesTab />
           </TabsContent>
+
+          <TabsContent value="faq">
+            <FAQManagementTab />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <NotificationSenderTab />
+          </TabsContent>
         </Tabs>
 
         <Dialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen}>
