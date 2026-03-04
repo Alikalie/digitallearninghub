@@ -1,12 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, MessageSquare, BookOpen, Settings } from "lucide-react";
+import { LayoutDashboard, MessageSquare, BookOpen, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { name: "Home", href: "/dashboard", icon: LayoutDashboard },
   { name: "Chat", href: "/chat", icon: MessageSquare },
   { name: "Courses", href: "/courses", icon: BookOpen },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Profile", href: "/profile", icon: User },
 ];
 
 export function MobileTabBar() {
