@@ -35,7 +35,7 @@ const baseNavigation = [
   { name: "AI Chat", href: "/chat", icon: MessageSquare },
   { name: "Image Generator", href: "/image-generator", icon: Image },
   { name: "Courses", href: "/courses", icon: BookOpen },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Profile", href: "/profile", icon: User },
 ];
 
 interface DashboardLayoutProps {
