@@ -173,9 +173,11 @@ export default function Admin() {
           <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="users" className="gap-2"><Users size={16} />Users</TabsTrigger>
             <TabsTrigger value="courses" className="gap-2"><BookOpen size={16} />Courses</TabsTrigger>
-            <TabsTrigger value="bot" className="gap-2"><Bot size={16} />Bot Knowledge</TabsTrigger>
-            <TabsTrigger value="site" className="gap-2"><Settings2 size={16} />Site Management</TabsTrigger>
+            <TabsTrigger value="bot" className="gap-2"><Bot size={16} />Bot</TabsTrigger>
+            <TabsTrigger value="site" className="gap-2"><Settings2 size={16} />Site</TabsTrigger>
             <TabsTrigger value="messages" className="gap-2"><Mail size={16} />Messages</TabsTrigger>
+            <TabsTrigger value="faq" className="gap-2"><HelpCircle size={16} />FAQ</TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2"><Bell size={16} />Notify</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
