@@ -14,9 +14,9 @@ export interface SiteSettings {
 }
 
 const DEFAULTS: SiteSettings = {
-  contact_email: "info@dlhub.com",
-  contact_phone: "+232 XX XXX XXXX",
-  contact_whatsapp: "+232 XX XXX XXXX",
+  contact_email: "digitallearninghub0@gmail.com",
+  contact_phone: "+232 077864684",
+  contact_whatsapp: "077864684",
   contact_address: "Freetown, Sierra Leone",
   footer_text: "© Digital Learning Hub. Made by Alikalie. All rights reserved.",
   demo_video_url: "",

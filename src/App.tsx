@@ -15,6 +15,7 @@ import ImageGenerator from "./pages/ImageGenerator";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
@@ -84,6 +85,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />
