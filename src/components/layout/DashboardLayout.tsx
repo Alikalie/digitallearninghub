@@ -163,9 +163,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell size={20} />
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                document.documentElement.classList.toggle("dark");
+              }}
+              title="Toggle theme"
+              className="h-9 w-9"
+            >
+              <Palette size={18} />
+            </Button>
+
+            <Button variant="ghost" size="icon" className="relative h-9 w-9" onClick={() => navigate("/profile")}>
+              <Bell size={18} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
             </Button>
 
