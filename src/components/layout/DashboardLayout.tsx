@@ -27,6 +27,7 @@ import {
   User,
   ChevronRight,
   Shield,
+  Palette,
 } from "lucide-react";
 import { MobileTabBar } from "./MobileTabBar";
 
