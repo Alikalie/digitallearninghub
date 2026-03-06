@@ -179,6 +179,7 @@ export default function Admin() {
             <TabsTrigger value="messages" className="gap-2"><Mail size={16} />Messages</TabsTrigger>
             <TabsTrigger value="faq" className="gap-2"><HelpCircle size={16} />FAQ</TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2"><Bell size={16} />Notify</TabsTrigger>
+            <TabsTrigger value="videos" className="gap-2"><Video size={16} />Videos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
