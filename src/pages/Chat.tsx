@@ -496,7 +496,7 @@ export default function Chat() {
                     )}
                   >
                     {message.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-hidden [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-3 [&_pre]:text-xs [&_code]:break-all [&_code]:text-xs">
+                      <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-hidden [&_pre]:overflow-x-auto [&_pre]:max-w-[calc(100vw-6rem)] sm:[&_pre]:max-w-full [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-3 [&_pre]:text-xs [&_pre]:whitespace-pre [&_pre]:scrollbar-thin [&_code]:text-xs [&_code:not(pre_code)]:break-all [&_pre_code]:break-normal [&_pre_code]:whitespace-pre [&_table]:block [&_table]:overflow-x-auto [&_table]:max-w-[calc(100vw-6rem)] sm:[&_table]:max-w-full">
                         <ReactMarkdown>{message.content || "..."}</ReactMarkdown>
                         {message.content && (
                           <div className="mt-1 flex items-center gap-3">

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload, Mail, HelpCircle, Bell,
+  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload, Mail, HelpCircle, Bell, Video,
 } from "lucide-react";
 import { DLH_COURSES, COURSE_CATEGORIES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
@@ -29,6 +29,7 @@ import { SiteManagementTab } from "@/components/admin/SiteManagementTab";
 import { ContactMessagesTab } from "@/components/admin/ContactMessagesTab";
 import { FAQManagementTab } from "@/components/admin/FAQManagementTab";
 import { NotificationSenderTab } from "@/components/admin/NotificationSenderTab";
+import { CourseVideoTab } from "@/components/admin/CourseVideoTab";
 
 interface Profile {
   id: string;
@@ -178,6 +179,7 @@ export default function Admin() {
             <TabsTrigger value="messages" className="gap-2"><Mail size={16} />Messages</TabsTrigger>
             <TabsTrigger value="faq" className="gap-2"><HelpCircle size={16} />FAQ</TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2"><Bell size={16} />Notify</TabsTrigger>
+            <TabsTrigger value="videos" className="gap-2"><Video size={16} />Videos</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -248,6 +250,10 @@ export default function Admin() {
 
           <TabsContent value="notifications">
             <NotificationSenderTab />
+          </TabsContent>
+
+          <TabsContent value="videos">
+            <CourseVideoTab />
           </TabsContent>
         </Tabs>
 
