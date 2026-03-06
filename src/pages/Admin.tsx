@@ -29,6 +29,7 @@ import { SiteManagementTab } from "@/components/admin/SiteManagementTab";
 import { ContactMessagesTab } from "@/components/admin/ContactMessagesTab";
 import { FAQManagementTab } from "@/components/admin/FAQManagementTab";
 import { NotificationSenderTab } from "@/components/admin/NotificationSenderTab";
+import { CourseVideoTab } from "@/components/admin/CourseVideoTab";
 
 interface Profile {
   id: string;
