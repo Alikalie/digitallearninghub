@@ -251,6 +251,10 @@ export default function Admin() {
           <TabsContent value="notifications">
             <NotificationSenderTab />
           </TabsContent>
+
+          <TabsContent value="videos">
+            <CourseVideoTab />
+          </TabsContent>
         </Tabs>
 
         <Dialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen}>
