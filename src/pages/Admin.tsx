@@ -30,6 +30,7 @@ import { ContactMessagesTab } from "@/components/admin/ContactMessagesTab";
 import { FAQManagementTab } from "@/components/admin/FAQManagementTab";
 import { NotificationSenderTab } from "@/components/admin/NotificationSenderTab";
 import { CourseVideoTab } from "@/components/admin/CourseVideoTab";
+import { ClassroomManagementTab } from "@/components/admin/ClassroomManagementTab";
 
 interface Profile {
   id: string;
