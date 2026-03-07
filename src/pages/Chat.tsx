@@ -599,11 +599,19 @@ export default function Chat() {
               <Textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Auto-expand
+                  if (textareaRef.current) {
+                    textareaRef.current.style.height = "auto";
+                    textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+                  }
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder={isListening ? "Listening..." : "Type your message..."}
-                className="min-h-[40px] sm:min-h-[52px] max-h-32 resize-none input-focus text-sm sm:text-base"
+                className="min-h-[48px] sm:min-h-[56px] max-h-[200px] resize-none input-focus text-sm sm:text-base py-3"
                 rows={1}
+                style={{ overflow: "auto" }}
               />
               <Button
                 onClick={sendMessage}

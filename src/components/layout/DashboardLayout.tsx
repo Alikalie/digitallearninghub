@@ -36,6 +36,7 @@ const baseNavigation = [
   { name: "AI Chat", href: "/chat", icon: MessageSquare },
   { name: "Image Generator", href: "/image-generator", icon: Image },
   { name: "Courses", href: "/courses", icon: BookOpen },
+  { name: "Classrooms", href: "/classrooms", icon: Users2 },
   { name: "Profile", href: "/profile", icon: User },
 ];
 
