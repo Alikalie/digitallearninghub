@@ -20,6 +20,9 @@ import Admin from "./pages/Admin";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
+import TutorDashboard from "./pages/TutorDashboard";
+import StudentClassrooms from "./pages/StudentClassrooms";
+import ClassroomView from "./pages/ClassroomView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,70 +43,17 @@ const App = () => (
             <Route path="/faq" element={<FAQ />} />
 
             {/* Protected routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/chat"
-              element={
-                <ProtectedRoute>
-                  <Chat />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/image-generator"
-              element={
-                <ProtectedRoute>
-                  <ImageGenerator />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/courses"
-              element={
-                <ProtectedRoute>
-                  <Courses />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/courses/:courseId"
-              element={
-                <ProtectedRoute>
-                  <CourseDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            <Route path="/image-generator" element={<ProtectedRoute><ImageGenerator /></ProtectedRoute>} />
+            <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+            <Route path="/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/tutor" element={<ProtectedRoute><TutorDashboard /></ProtectedRoute>} />
+            <Route path="/classrooms" element={<ProtectedRoute><StudentClassrooms /></ProtectedRoute>} />
+            <Route path="/classroom/:classroomId" element={<ProtectedRoute><ClassroomView /></ProtectedRoute>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

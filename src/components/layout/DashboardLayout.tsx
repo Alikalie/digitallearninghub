@@ -28,6 +28,8 @@ import {
   ChevronRight,
   Shield,
   Palette,
+  Users as UsersIcon,
+  GraduationCap,
 } from "lucide-react";
 import { MobileTabBar } from "./MobileTabBar";
 
@@ -36,6 +38,7 @@ const baseNavigation = [
   { name: "AI Chat", href: "/chat", icon: MessageSquare },
   { name: "Image Generator", href: "/image-generator", icon: Image },
   { name: "Courses", href: "/courses", icon: BookOpen },
+  { name: "Classrooms", href: "/classrooms", icon: UsersIcon },
   { name: "Profile", href: "/profile", icon: User },
 ];
 
@@ -50,9 +53,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, profile, signOut } = useAuth();
   const isAdmin = useAdminRole();
 
-  const navigation = isAdmin
-    ? [...baseNavigation, { name: "Admin", href: "/admin", icon: Shield }]
-    : baseNavigation;
+  const isTutor = profile?.user_type === "tutor";
+
+  const navigation = [
+    ...baseNavigation,
+    ...(isTutor ? [{ name: "Tutor Panel", href: "/tutor", icon: GraduationCap }] : []),
+    ...(isAdmin ? [{ name: "Admin", href: "/admin", icon: Shield }] : []),
+  ];
 
   const handleSignOut = async () => {
     await signOut();

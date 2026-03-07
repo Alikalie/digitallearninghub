@@ -4,36 +4,123 @@ import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BookOpen, MessageSquare, Clock, Users, Star, CheckCircle, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, BookOpen, MessageSquare, Clock, Users, Star, CheckCircle, Loader2, Play } from "lucide-react";
 import { DLH_COURSES } from "@/lib/courses";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface Lesson {
+  id: string;
+  title: string;
+  content: string | null;
+  video_url: string | null;
+  order_index: number;
+}
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    let videoId = "";
+    if (u.hostname.includes("youtube.com")) {
+      videoId = u.searchParams.get("v") || "";
+    } else if (u.hostname.includes("youtu.be")) {
+      videoId = u.pathname.slice(1);
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function CourseDetail() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [dbCourse, setDbCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [videosEnabled, setVideosEnabled] = useState(false);
 
-  // Try to find in static courses first
   const staticCourse = DLH_COURSES.find((c) => c.id === courseId);
 
   useEffect(() => {
-    if (staticCourse) {
-      setLoading(false);
-      return;
-    }
-    // If not found in static, look up in DB
-    const fetchCourse = async () => {
-      const { data } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("id", courseId!)
-        .single();
+    loadCourseData();
+  }, [courseId]);
+
+  const loadCourseData = async () => {
+    // Check videos_enabled setting
+    const { data: settingsData } = await supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "videos_enabled")
+      .single();
+    setVideosEnabled(settingsData?.value === true);
+
+    if (!staticCourse) {
+      const { data } = await supabase.from("courses").select("*").eq("id", courseId!).single();
       setDbCourse(data);
-      setLoading(false);
-    };
-    fetchCourse();
-  }, [courseId, staticCourse]);
+    }
+
+    // Load lessons for this course (try by courseId first, then by matching title)
+    let courseDbId = courseId;
+    if (staticCourse) {
+      const { data: matchedCourse } = await supabase
+        .from("courses")
+        .select("id")
+        .eq("title", staticCourse.title)
+        .single();
+      if (matchedCourse) courseDbId = matchedCourse.id;
+    }
+
+    const { data: lessonData } = await supabase
+      .from("lessons")
+      .select("*")
+      .eq("course_id", courseDbId!)
+      .order("order_index", { ascending: true });
+    setLessons(lessonData || []);
+
+    // Load progress
+    if (user && lessonData && lessonData.length > 0) {
+      const lessonIds = lessonData.map((l) => l.id);
+      const { data: progressData } = await supabase
+        .from("course_progress")
+        .select("lesson_id")
+        .eq("completed", true)
+        .in("lesson_id", lessonIds);
+      setCompletedLessons(new Set((progressData || []).map((p) => p.lesson_id)));
+    }
+
+    setLoading(false);
+  };
+
+  const toggleLessonComplete = async (lessonId: string) => {
+    if (!user) return;
+    const isCompleted = completedLessons.has(lessonId);
+
+    if (isCompleted) {
+      await supabase
+        .from("course_progress")
+        .update({ completed: false, completed_at: null })
+        .eq("user_id", user.id)
+        .eq("lesson_id", lessonId);
+      setCompletedLessons((prev) => {
+        const n = new Set(prev);
+        n.delete(lessonId);
+        return n;
+      });
+    } else {
+      await supabase.from("course_progress").upsert({
+        user_id: user.id,
+        lesson_id: lessonId,
+        completed: true,
+        completed_at: new Date().toISOString(),
+      });
+      setCompletedLessons((prev) => new Set([...prev, lessonId]));
+    }
+  };
 
   if (loading) {
     return (
@@ -45,29 +132,16 @@ export default function CourseDetail() {
     );
   }
 
-  // Build a unified course object
   const course = staticCourse
     ? staticCourse
     : dbCourse
-    ? {
-        id: dbCourse.id,
-        title: dbCourse.title,
-        description: dbCourse.description || "",
-        category: dbCourse.category || "Other",
-        image_url: dbCourse.image_url || "",
-        topics: [] as string[],
-      }
+    ? { id: dbCourse.id, title: dbCourse.title, description: dbCourse.description || "", category: dbCourse.category || "Other", image_url: dbCourse.image_url || "", topics: [] as string[] }
     : null;
 
-  // For DB courses, try to match a static course by title to get topics & AI prompt
-  const matchedStatic = dbCourse
-    ? DLH_COURSES.find(
-        (c) => c.title.toLowerCase() === dbCourse.title?.toLowerCase()
-      )
-    : null;
-
+  const matchedStatic = dbCourse ? DLH_COURSES.find((c) => c.title.toLowerCase() === dbCourse.title?.toLowerCase()) : null;
   const topics = staticCourse?.topics || matchedStatic?.topics || [];
   const chatCourseId = staticCourse?.id || matchedStatic?.id || courseId;
+  const progressPercent = lessons.length > 0 ? Math.round((completedLessons.size / lessons.length) * 100) : 0;
 
   if (!course) {
     return (
@@ -83,7 +157,7 @@ export default function CourseDetail() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 lg:p-6 max-w-4xl mx-auto">
+      <div className="p-4 lg:p-6 max-w-4xl mx-auto pb-20">
         <Button variant="ghost" onClick={() => navigate("/courses")} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Courses
         </Button>
@@ -108,6 +182,18 @@ export default function CourseDetail() {
           <h1 className="text-2xl lg:text-3xl font-bold mb-4">{course.title}</h1>
           <p className="text-muted-foreground mb-8">{course.description}</p>
 
+          {/* Progress Bar */}
+          {lessons.length > 0 && (
+            <div className="bg-card rounded-2xl border border-border p-4 mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Your Progress</span>
+                <span className="text-sm text-muted-foreground">{completedLessons.size}/{lessons.length} lessons</span>
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-1">{progressPercent}% complete</p>
+            </div>
+          )}
+
           {topics.length > 0 && (
             <div className="bg-card rounded-2xl border border-border p-6 mb-8">
               <h2 className="text-lg font-semibold mb-4">What You'll Learn</h2>
@@ -119,6 +205,62 @@ export default function CourseDetail() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Lessons with Videos */}
+          {lessons.length > 0 && (
+            <div className="space-y-4 mb-8">
+              <h2 className="text-lg font-semibold">Lessons</h2>
+              {lessons.map((lesson, i) => {
+                const embedUrl = lesson.video_url ? getYouTubeEmbedUrl(lesson.video_url) : null;
+                const isCompleted = completedLessons.has(lesson.id);
+                return (
+                  <motion.div
+                    key={lesson.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="dlh-card p-4 space-y-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={isCompleted}
+                        onCheckedChange={() => toggleLessonComplete(lesson.id)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <h3 className={`font-medium ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
+                          {i + 1}. {lesson.title}
+                        </h3>
+                        {lesson.content && (
+                          <p className="text-sm text-muted-foreground mt-1">{lesson.content}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {videosEnabled && lesson.video_url && (
+                      <div className="mt-3">
+                        {embedUrl ? (
+                          <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                            <iframe
+                              src={embedUrl}
+                              title={lesson.title}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        ) : (
+                          <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                            <video src={lesson.video_url} controls className="w-full h-full" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
 
