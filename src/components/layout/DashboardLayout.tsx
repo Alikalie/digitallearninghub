@@ -28,6 +28,8 @@ import {
   ChevronRight,
   Shield,
   Palette,
+  Users as UsersIcon,
+  GraduationCap,
 } from "lucide-react";
 import { MobileTabBar } from "./MobileTabBar";
 
