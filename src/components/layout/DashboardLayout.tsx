@@ -53,9 +53,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, profile, signOut } = useAuth();
   const isAdmin = useAdminRole();
 
-  const navigation = isAdmin
-    ? [...baseNavigation, { name: "Admin", href: "/admin", icon: Shield }]
-    : baseNavigation;
+  const isTutor = profile?.user_type === "tutor";
+
+  const navigation = [
+    ...baseNavigation,
+    ...(isTutor ? [{ name: "Tutor Panel", href: "/tutor", icon: GraduationCap }] : []),
+    ...(isAdmin ? [{ name: "Admin", href: "/admin", icon: Shield }] : []),
+  ];
 
   const handleSignOut = async () => {
     await signOut();

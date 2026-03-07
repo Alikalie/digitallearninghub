@@ -257,6 +257,10 @@ export default function Admin() {
           <TabsContent value="videos">
             <CourseVideoTab />
           </TabsContent>
+
+          <TabsContent value="classrooms">
+            <ClassroomManagementTab />
+          </TabsContent>
         </Tabs>
 
         <Dialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen}>
