@@ -10,9 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import {
-  Search, Users, BookOpen, Loader2, LogIn,
-} from "lucide-react";
+import { Search, Users, BookOpen, Loader2, LogIn, Send } from "lucide-react";
 
 interface ClassroomWithMeta {
   id: string;
@@ -23,10 +21,11 @@ interface ClassroomWithMeta {
   member_count?: number;
   tutor_name?: string;
   is_joined?: boolean;
+  tutor_id?: string;
 }
 
 export default function StudentClassrooms() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [myClassrooms, setMyClassrooms] = useState<ClassroomWithMeta[]>([]);
   const [allClassrooms, setAllClassrooms] = useState<ClassroomWithMeta[]>([]);
@@ -35,21 +34,21 @@ export default function StudentClassrooms() {
   const [joining, setJoining] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // If user is a tutor, redirect to tutor dashboard
+  const isTutor = profile?.user_type === "tutor";
+
   useEffect(() => {
     if (user) loadData();
   }, [user]);
 
   const loadData = async () => {
     setLoading(true);
-
-    // My memberships
     const { data: memberships } = await supabase
       .from("classroom_members")
       .select("classroom_id")
       .eq("user_id", user!.id);
     const myIds = new Set((memberships || []).map((m) => m.classroom_id));
 
-    // All active classrooms
     const { data: rooms } = await supabase
       .from("classrooms")
       .select("*")
@@ -83,10 +82,7 @@ export default function StudentClassrooms() {
   };
 
   const joinByCode = async () => {
-    if (!joinCode.trim()) {
-      toast.error("Please enter a classroom code");
-      return;
-    }
+    if (!joinCode.trim()) { toast.error("Please enter a classroom code"); return; }
     setJoining(true);
     const { data: room } = await supabase
       .from("classrooms")
@@ -94,15 +90,8 @@ export default function StudentClassrooms() {
       .eq("classroom_code", joinCode.trim().toLowerCase())
       .eq("is_active", true)
       .single();
-    if (!room) {
-      toast.error("Invalid classroom code");
-      setJoining(false);
-      return;
-    }
-    const { error } = await supabase.from("classroom_members").insert({
-      classroom_id: room.id,
-      user_id: user!.id,
-    });
+    if (!room) { toast.error("Invalid classroom code"); setJoining(false); return; }
+    const { error } = await supabase.from("classroom_members").insert({ classroom_id: room.id, user_id: user!.id });
     if (error) {
       toast.error(error.message.includes("unique") ? "Already a member" : "Failed to join");
     } else {
@@ -113,11 +102,9 @@ export default function StudentClassrooms() {
     setJoining(false);
   };
 
-  const joinClassroom = async (classroomId: string) => {
-    const { error } = await supabase.from("classroom_members").insert({
-      classroom_id: classroomId,
-      user_id: user!.id,
-    });
+  const requestToJoin = async (classroomId: string) => {
+    // Direct join for now (join request = instant join)
+    const { error } = await supabase.from("classroom_members").insert({ classroom_id: classroomId, user_id: user!.id });
     if (error) {
       toast.error(error.message.includes("unique") ? "Already a member" : "Failed to join");
       return;
@@ -141,20 +128,21 @@ export default function StudentClassrooms() {
       <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-6 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-2xl font-bold mb-2">Classrooms</h1>
-          <p className="text-muted-foreground text-sm">Join study classrooms and learn with peers</p>
+          <p className="text-muted-foreground text-sm">
+            {isTutor ? "Manage your classrooms or browse others" : "Join study classrooms and learn with peers"}
+          </p>
+          {isTutor && (
+            <Button onClick={() => navigate("/tutor")} className="mt-3 bg-gradient-primary" size="sm">
+              Go to Tutor Dashboard
+            </Button>
+          )}
         </motion.div>
 
         {/* Join by code */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="dlh-card p-4">
           <p className="font-medium text-sm mb-2">Have a classroom code?</p>
           <div className="flex gap-2">
-            <Input
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value)}
-              placeholder="Enter code (e.g. abc12345)"
-              className="font-mono"
-              onKeyDown={(e) => e.key === "Enter" && joinByCode()}
-            />
+            <Input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Enter code (e.g. abc12345)" className="font-mono" onKeyDown={(e) => e.key === "Enter" && joinByCode()} />
             <Button onClick={joinByCode} disabled={joining} className="bg-gradient-primary flex-shrink-0">
               {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <><LogIn className="mr-2 h-4 w-4" />Join</>}
             </Button>
@@ -217,8 +205,13 @@ export default function StudentClassrooms() {
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">By {room.tutor_name}</span>
-                          <Button size="sm" onClick={() => joinClassroom(room.id)} className="bg-gradient-primary">Join</Button>
+                          <div className="text-sm text-muted-foreground">
+                            <span>By {room.tutor_name}</span>
+                            <span className="ml-3 inline-flex items-center gap-1"><Users size={14} />{room.member_count}</span>
+                          </div>
+                          <Button size="sm" onClick={() => requestToJoin(room.id)} className="bg-gradient-primary">
+                            <Send className="mr-1 h-3 w-3" /> Join
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

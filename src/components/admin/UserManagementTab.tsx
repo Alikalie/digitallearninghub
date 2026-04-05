@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,9 +19,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import {
-  Search, Eye, EyeOff, Shield, Pencil, Trash2, BookOpen,
-} from "lucide-react";
+import { Search, Eye, EyeOff, Shield, Pencil, Trash2, BookOpen } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -49,21 +48,17 @@ interface Props {
 }
 
 export function UserManagementTab({ users, onRefresh }: Props) {
+  const { user: currentUser } = useAuth();
   const [userSearch, setUserSearch] = useState("");
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [userRoles, setUserRoles] = useState<Record<string, string>>({});
+  const [currentUserRole, setCurrentUserRole] = useState<string>("admin");
   const [editForm, setEditForm] = useState({
-    full_name: "",
-    email: "",
-    phone_number: "",
-    country: "",
-    user_type: "student",
-    course_of_interest: "",
+    full_name: "", email: "", phone_number: "", country: "", user_type: "student", course_of_interest: "",
   });
 
-  // Fetch roles for all users
   useEffect(() => {
     const fetchRoles = async () => {
       const { data } = await supabase.from("user_roles").select("user_id, role");
@@ -71,32 +66,39 @@ export function UserManagementTab({ users, onRefresh }: Props) {
         const rolesMap: Record<string, string> = {};
         data.forEach((r: UserRole) => { rolesMap[r.user_id] = r.role; });
         setUserRoles(rolesMap);
+        // Determine current user's role
+        if (currentUser && rolesMap[currentUser.id]) {
+          setCurrentUserRole(rolesMap[currentUser.id]);
+        }
       }
     };
     if (users.length > 0) fetchRoles();
-  }, [users]);
+  }, [users, currentUser]);
 
-  const filteredUsers = users.filter(
+  const isSuperAdmin = currentUserRole === "super_admin";
+
+  // Filter: regular admins cannot see super_admins
+  const visibleUsers = users.filter((u) => {
+    const role = userRoles[u.user_id];
+    if (!isSuperAdmin && role === "super_admin") return false;
+    return true;
+  });
+
+  const filteredUsers = visibleUsers.filter(
     (u) =>
       u.full_name.toLowerCase().includes(userSearch.toLowerCase()) ||
       u.email.toLowerCase().includes(userSearch.toLowerCase())
   );
 
   const toggleSuspend = async (profile: Profile) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_suspended: !profile.is_suspended })
-      .eq("id", profile.id);
+    const { error } = await supabase.from("profiles").update({ is_suspended: !profile.is_suspended }).eq("id", profile.id);
     if (error) { toast.error("Failed to update user"); return; }
     toast.success(profile.is_suspended ? "User unsuspended" : "User suspended");
     onRefresh();
   };
 
   const toggleVerify = async (profile: Profile) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_verified: !profile.is_verified })
-      .eq("id", profile.id);
+    const { error } = await supabase.from("profiles").update({ is_verified: !profile.is_verified }).eq("id", profile.id);
     if (error) { toast.error("Failed to update user"); return; }
     toast.success(profile.is_verified ? "Verification removed" : "User verified");
     onRefresh();
@@ -105,28 +107,20 @@ export function UserManagementTab({ users, onRefresh }: Props) {
   const openEditDialog = (user: Profile) => {
     setEditingUser(user);
     setEditForm({
-      full_name: user.full_name,
-      email: user.email,
-      phone_number: user.phone_number || "",
-      country: user.country || "",
-      user_type: user.user_type || "student",
-      course_of_interest: user.course_of_interest || "",
+      full_name: user.full_name, email: user.email,
+      phone_number: user.phone_number || "", country: user.country || "",
+      user_type: user.user_type || "student", course_of_interest: user.course_of_interest || "",
     });
     setEditDialogOpen(true);
   };
 
   const saveUserEdit = async () => {
     if (!editingUser) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: editForm.full_name,
-        phone_number: editForm.phone_number || null,
-        country: editForm.country || null,
-        user_type: editForm.user_type,
-        course_of_interest: editForm.course_of_interest || null,
-      })
-      .eq("id", editingUser.id);
+    const { error } = await supabase.from("profiles").update({
+      full_name: editForm.full_name, phone_number: editForm.phone_number || null,
+      country: editForm.country || null, user_type: editForm.user_type,
+      course_of_interest: editForm.course_of_interest || null,
+    }).eq("id", editingUser.id);
     if (error) { toast.error("Failed to update user"); return; }
     toast.success("User updated successfully");
     setEditDialogOpen(false);
@@ -135,10 +129,7 @@ export function UserManagementTab({ users, onRefresh }: Props) {
 
   const deleteUser = async () => {
     if (!deleteUserId) return;
-    const { error } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", deleteUserId);
+    const { error } = await supabase.from("profiles").delete().eq("id", deleteUserId);
     if (error) { toast.error("Failed to delete user profile"); return; }
     toast.success("User profile deleted");
     setDeleteUserId(null);
@@ -146,15 +137,32 @@ export function UserManagementTab({ users, onRefresh }: Props) {
   };
 
   const changeUserRole = async (userId: string, newRole: string) => {
+    // Prevent regular admins from assigning super_admin
+    if (!isSuperAdmin && newRole === "super_admin") {
+      toast.error("Only Super Admins can assign the Super Admin role");
+      return;
+    }
     await supabase.from("user_roles").delete().eq("user_id", userId);
-    const { error } = await supabase
-      .from("user_roles")
-      .insert({ user_id: userId, role: newRole as any });
+    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole as any });
     if (error) { toast.error("Failed to change role"); return; }
     toast.success(`Role changed to ${newRole}`);
     setUserRoles(prev => ({ ...prev, [userId]: newRole }));
     onRefresh();
   };
+
+  // Role options based on current user's role
+  const roleOptions = isSuperAdmin
+    ? [
+        { value: "student", label: "Student" },
+        { value: "tutor", label: "Tutor" },
+        { value: "admin", label: "Admin" },
+        { value: "super_admin", label: "Super Admin" },
+      ]
+    : [
+        { value: "student", label: "Student" },
+        { value: "tutor", label: "Tutor" },
+        { value: "admin", label: "Admin" },
+      ];
 
   return (
     <div className="dlh-card">
@@ -163,7 +171,7 @@ export function UserManagementTab({ users, onRefresh }: Props) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
           <Input placeholder="Search users..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className="pl-9" />
         </div>
-        <Badge variant="secondary" className="flex-shrink-0">{users.length} users</Badge>
+        <Badge variant="secondary" className="flex-shrink-0">{visibleUsers.length} users</Badge>
       </div>
       <div className="overflow-x-auto">
         <Table>
@@ -205,9 +213,7 @@ export function UserManagementTab({ users, onRefresh }: Props) {
                       <BookOpen size={12} />
                       <span className="truncate max-w-[100px]">{u.course_of_interest}</span>
                     </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
+                  ) : <span className="text-xs text-muted-foreground">—</span>}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
@@ -216,9 +222,7 @@ export function UserManagementTab({ users, onRefresh }: Props) {
                     {!u.is_verified && !u.is_suspended && <Badge variant="secondary" className="text-xs">Pending</Badge>}
                   </div>
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {new Date(u.created_at).toLocaleDateString()}
-                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
                     <Button size="sm" variant="ghost" onClick={() => toggleVerify(u)} title={u.is_verified ? "Unverify" : "Verify"}>
@@ -227,21 +231,14 @@ export function UserManagementTab({ users, onRefresh }: Props) {
                     <Button size="sm" variant="ghost" onClick={() => toggleSuspend(u)} className={u.is_suspended ? "text-dlh-success" : "text-destructive"} title={u.is_suspended ? "Unsuspend" : "Suspend"}>
                       <Shield size={14} />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => openEditDialog(u)} title="Edit user">
-                      <Pencil size={14} />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteUserId(u.id)} title="Delete user">
-                      <Trash2 size={14} />
-                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => openEditDialog(u)} title="Edit user"><Pencil size={14} /></Button>
+                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteUserId(u.id)} title="Delete user"><Trash2 size={14} /></Button>
                     <Select onValueChange={(val) => changeUserRole(u.user_id, val)}>
-                      <SelectTrigger className="h-8 w-[100px] text-xs">
-                        <SelectValue placeholder="Role" />
-                      </SelectTrigger>
+                      <SelectTrigger className="h-8 w-[100px] text-xs"><SelectValue placeholder="Role" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="tutor">Tutor</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="super_admin">Super Admin</SelectItem>
+                        {roleOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -252,12 +249,9 @@ export function UserManagementTab({ users, onRefresh }: Props) {
         </Table>
       </div>
 
-      {/* Edit User Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>Full Name</Label><Input value={editForm.full_name} onChange={(e) => setEditForm(f => ({ ...f, full_name: e.target.value }))} className="mt-1" /></div>
             <div><Label>Email (read-only)</Label><Input value={editForm.email} disabled className="mt-1 opacity-60" /></div>
@@ -282,14 +276,11 @@ export function UserManagementTab({ users, onRefresh }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the user profile. This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete the user profile. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
