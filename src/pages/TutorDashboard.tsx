@@ -250,7 +250,7 @@ export default function TutorDashboard() {
       <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-6">
         {/* Tutor header with blue theme accent */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-primary to-blue-600 rounded-2xl p-6 text-primary-foreground"
+          className="bg-gradient-hero rounded-2xl p-6 text-primary-foreground"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
