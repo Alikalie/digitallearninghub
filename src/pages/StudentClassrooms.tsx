@@ -9,8 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Search, Users, BookOpen, Loader2, LogIn, Send } from "lucide-react";
+import { Search, Users, BookOpen, Loader2, LogIn, Send, Lock, Crown } from "lucide-react";
+
+const MAX_FREE_JOINS = 2;
 
 interface ClassroomWithMeta {
   id: string;
@@ -33,8 +38,9 @@ export default function StudentClassrooms() {
   const [joinCode, setJoinCode] = useState("");
   const [joining, setJoining] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [joinedCount, setJoinedCount] = useState(0);
 
-  // If user is a tutor, redirect to tutor dashboard
   const isTutor = profile?.user_type === "tutor";
 
   useEffect(() => {
@@ -48,6 +54,7 @@ export default function StudentClassrooms() {
       .select("classroom_id")
       .eq("user_id", user!.id);
     const myIds = new Set((memberships || []).map((m) => m.classroom_id));
+    setJoinedCount(myIds.size);
 
     const { data: rooms } = await supabase
       .from("classrooms")
@@ -81,8 +88,17 @@ export default function StudentClassrooms() {
     setLoading(false);
   };
 
+  const checkJoinLimit = (): boolean => {
+    if (joinedCount >= MAX_FREE_JOINS) {
+      setShowUpgradeDialog(true);
+      return false;
+    }
+    return true;
+  };
+
   const joinByCode = async () => {
     if (!joinCode.trim()) { toast.error("Please enter a classroom code"); return; }
+    if (!checkJoinLimit()) return;
     setJoining(true);
     const { data: room } = await supabase
       .from("classrooms")
@@ -103,7 +119,7 @@ export default function StudentClassrooms() {
   };
 
   const requestToJoin = async (classroomId: string) => {
-    // Direct join for now (join request = instant join)
+    if (!checkJoinLimit()) return;
     const { error } = await supabase.from("classroom_members").insert({ classroom_id: classroomId, user_id: user!.id });
     if (error) {
       toast.error(error.message.includes("unique") ? "Already a member" : "Failed to join");
@@ -127,15 +143,23 @@ export default function StudentClassrooms() {
     <DashboardLayout>
       <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-6 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-bold mb-2">Classrooms</h1>
-          <p className="text-muted-foreground text-sm">
-            {isTutor ? "Manage your classrooms or browse others" : "Join study classrooms and learn with peers"}
-          </p>
-          {isTutor && (
-            <Button onClick={() => navigate("/tutor")} className="mt-3 bg-gradient-primary" size="sm">
-              Go to Tutor Dashboard
-            </Button>
-          )}
+          {/* Blue themed header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl p-5 text-white mb-4">
+            <h1 className="text-2xl font-bold mb-1">Classrooms</h1>
+            <p className="text-blue-100 text-sm">
+              {isTutor ? "Manage your classrooms or browse others" : "Join study classrooms and learn with peers"}
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <Badge className="bg-white/20 text-white border-0">
+                {joinedCount}/{MAX_FREE_JOINS} free joins used
+              </Badge>
+              {isTutor && (
+                <Button onClick={() => navigate("/tutor")} size="sm" className="bg-white text-blue-600 hover:bg-blue-50">
+                  Go to Tutor Dashboard
+                </Button>
+              )}
+            </div>
+          </div>
         </motion.div>
 
         {/* Join by code */}
@@ -143,7 +167,7 @@ export default function StudentClassrooms() {
           <p className="font-medium text-sm mb-2">Have a classroom code?</p>
           <div className="flex gap-2">
             <Input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="Enter code (e.g. abc12345)" className="font-mono" onKeyDown={(e) => e.key === "Enter" && joinByCode()} />
-            <Button onClick={joinByCode} disabled={joining} className="bg-gradient-primary flex-shrink-0">
+            <Button onClick={joinByCode} disabled={joining} className="bg-blue-600 hover:bg-blue-700 flex-shrink-0">
               {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <><LogIn className="mr-2 h-4 w-4" />Join</>}
             </Button>
           </div>
@@ -166,12 +190,12 @@ export default function StudentClassrooms() {
               <div className="grid sm:grid-cols-2 gap-4">
                 {myClassrooms.map((room, i) => (
                   <motion.div key={room.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/classroom/${room.id}`)}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">{room.name}</CardTitle>
-                        {room.description && <p className="text-sm text-muted-foreground line-clamp-2">{room.description}</p>}
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow border-blue-100" onClick={() => navigate(`/classroom/${room.id}`)}>
+                      <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-blue-25 rounded-t-lg">
+                        <CardTitle className="text-base text-blue-900">{room.name}</CardTitle>
+                        {room.description && <p className="text-sm text-blue-700/70 line-clamp-2">{room.description}</p>}
                       </CardHeader>
-                      <CardContent className="pt-0">
+                      <CardContent className="pt-3">
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                           <span>By {room.tutor_name}</span>
                           <span className="flex items-center gap-1"><Users size={14} />{room.member_count}</span>
@@ -195,11 +219,11 @@ export default function StudentClassrooms() {
               <div className="grid sm:grid-cols-2 gap-4">
                 {filtered.map((room, i) => (
                   <motion.div key={room.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                    <Card>
+                    <Card className="border-blue-100">
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <CardTitle className="text-base">{room.name}</CardTitle>
-                          <Badge variant="outline" className="text-xs">Open</Badge>
+                          <Badge variant="outline" className="text-xs border-blue-200 text-blue-600">Open</Badge>
                         </div>
                         {room.description && <p className="text-sm text-muted-foreground line-clamp-2">{room.description}</p>}
                       </CardHeader>
@@ -209,7 +233,7 @@ export default function StudentClassrooms() {
                             <span>By {room.tutor_name}</span>
                             <span className="ml-3 inline-flex items-center gap-1"><Users size={14} />{room.member_count}</span>
                           </div>
-                          <Button size="sm" onClick={() => requestToJoin(room.id)} className="bg-gradient-primary">
+                          <Button size="sm" onClick={() => requestToJoin(room.id)} className="bg-blue-600 hover:bg-blue-700">
                             <Send className="mr-1 h-3 w-3" /> Join
                           </Button>
                         </div>
@@ -222,6 +246,27 @@ export default function StudentClassrooms() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Upgrade Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader>
+            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-2">
+              <Crown className="text-blue-600" size={32} />
+            </div>
+            <DialogTitle>Classroom Limit Reached</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            You've joined the maximum of {MAX_FREE_JOINS} free classrooms. Upgrade to join unlimited classrooms.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Contact admin to upgrade your account. Email: digitallearninghub0@gmail.com or WhatsApp: 077864684
+          </p>
+          <DialogFooter>
+            <Button onClick={() => setShowUpgradeDialog(false)} variant="outline" className="w-full">Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
