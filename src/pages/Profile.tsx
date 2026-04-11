@@ -10,11 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
-  Loader2, Save, Camera, Bell, Shield, ChevronDown, ChevronUp,
+  Loader2, Save, Camera, Bell, Shield, ChevronDown, ChevronUp, Lock, Send, CheckCircle, Clock,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { DLH_COURSES } from "@/lib/courses";
 
@@ -37,6 +40,12 @@ export default function Profile() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
+  const [isProfileLocked, setIsProfileLocked] = useState(false);
+  const [editRequestStatus, setEditRequestStatus] = useState<string | null>(null);
+  const [showEditRequestDialog, setShowEditRequestDialog] = useState(false);
+  const [editRequestReason, setEditRequestReason] = useState("");
+  const [sendingRequest, setSendingRequest] = useState(false);
+  const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -58,12 +67,47 @@ export default function Profile() {
         bio: profile.bio || "",
         course_of_interest: profile.course_of_interest || "",
       });
+
+      // Check if profile is incomplete (missing key fields)
+      const incomplete = !profile.full_name || !profile.phone_number || !profile.country || !profile.course_of_interest;
+      setIsProfileIncomplete(incomplete);
+
+      // Check lock status
+      checkProfileLock();
     }
   }, [profile]);
 
   useEffect(() => {
-    if (user) fetchNotifications();
+    if (user) {
+      fetchNotifications();
+      checkEditRequest();
+    }
   }, [user]);
+
+  const checkProfileLock = async () => {
+    if (!profile) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("is_profile_locked")
+      .eq("id", profile.id)
+      .single();
+    if (data) {
+      setIsProfileLocked(data.is_profile_locked || false);
+    }
+  };
+
+  const checkEditRequest = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("profile_edit_requests")
+      .select("status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (data && data.length > 0) {
+      setEditRequestStatus(data[0].status);
+    }
+  };
 
   const fetchNotifications = async () => {
     setNotifLoading(true);
@@ -102,6 +146,13 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     if (!profile) return;
+    
+    // Validate required fields
+    if (!formData.first_name.trim() || !formData.phone_number.trim() || !formData.country.trim() || !formData.course_of_interest) {
+      toast.error("Please fill in all required fields: First Name, Phone, Country, and Primary Course");
+      return;
+    }
+
     setLoading(true);
     try {
       const full_name = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
@@ -113,15 +164,42 @@ export default function Profile() {
           country: formData.country,
           bio: formData.bio,
           course_of_interest: formData.course_of_interest,
+          is_profile_locked: true, // Lock after first save
         })
         .eq("id", profile.id);
       if (error) throw error;
       await refreshProfile();
-      toast.success("Profile updated successfully");
+      setIsProfileLocked(true);
+      setIsProfileIncomplete(false);
+      toast.success("Profile saved successfully! Your profile is now locked.");
     } catch (error: any) {
       toast.error(error.message || "Failed to update profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendEditRequest = async () => {
+    if (!user || !editRequestReason.trim()) {
+      toast.error("Please provide a reason for editing your profile");
+      return;
+    }
+    setSendingRequest(true);
+    try {
+      const { error } = await supabase.from("profile_edit_requests").insert({
+        user_id: user.id,
+        requested_changes: { reason: editRequestReason },
+        status: "pending",
+      });
+      if (error) throw error;
+      setEditRequestStatus("pending");
+      setShowEditRequestDialog(false);
+      setEditRequestReason("");
+      toast.success("Edit request sent to admin for approval");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send request");
+    } finally {
+      setSendingRequest(false);
     }
   };
 
@@ -147,6 +225,9 @@ export default function Profile() {
     }
   };
 
+  // Check if editing is allowed (profile approved for edit by admin)
+  const canEdit = !isProfileLocked || editRequestStatus === "approved" || isProfileIncomplete;
+
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
@@ -156,6 +237,39 @@ export default function Profile() {
           <h1 className="text-2xl font-bold mb-1">My Profile</h1>
           <p className="text-muted-foreground text-sm">Manage your account and preferences</p>
         </motion.div>
+
+        {/* Incomplete Profile Banner */}
+        {isProfileIncomplete && !isProfileLocked && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex items-start gap-3">
+            <CheckCircle className="text-primary flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="font-semibold text-sm">Complete Your Profile</p>
+              <p className="text-sm text-muted-foreground">Please fill in all required fields to complete your profile setup. Your profile will be locked after saving.</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Locked Profile Banner */}
+        {isProfileLocked && editRequestStatus !== "approved" && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-muted border border-border rounded-xl p-4 flex items-start gap-3">
+            <Lock className="text-muted-foreground flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <p className="font-semibold text-sm">Profile Locked</p>
+              <p className="text-sm text-muted-foreground">Your profile is locked. To make changes, request permission from admin.</p>
+              <div className="mt-2 flex items-center gap-2">
+                {editRequestStatus === "pending" ? (
+                  <div className="flex items-center gap-2 text-sm text-amber-600">
+                    <Clock size={14} /> Edit request pending approval
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setShowEditRequestDialog(true)}>
+                    <Send className="mr-2 h-3 w-3" /> Request Edit Permission
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Avatar & Info */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="dlh-card p-5">
@@ -180,7 +294,7 @@ export default function Profile() {
               </button>
             </div>
             <div>
-              <p className="font-semibold text-lg">{profile?.full_name}</p>
+              <p className="font-semibold text-lg">{profile?.full_name || "Set up your profile"}</p>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
               <p className="text-xs text-muted-foreground capitalize mt-0.5">
                 {profile?.user_type || "Student"} • {profile?.country || "—"}
@@ -191,24 +305,24 @@ export default function Profile() {
           {/* Form */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="first_name">First Name</Label>
-              <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="mt-1" />
+              <Label htmlFor="first_name">First Name *</Label>
+              <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} className="mt-1" disabled={!canEdit} />
             </div>
             <div>
               <Label htmlFor="last_name">Last Name</Label>
-              <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="mt-1" />
+              <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} className="mt-1" disabled={!canEdit} />
             </div>
             <div>
-              <Label htmlFor="phone_number">Phone Number</Label>
-              <Input id="phone_number" name="phone_number" value={formData.phone_number} onChange={handleInputChange} className="mt-1" />
+              <Label htmlFor="phone_number">Phone Number *</Label>
+              <Input id="phone_number" name="phone_number" value={formData.phone_number} onChange={handleInputChange} className="mt-1" disabled={!canEdit} />
             </div>
             <div>
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" name="country" value={formData.country} onChange={handleInputChange} className="mt-1" />
+              <Label htmlFor="country">Country *</Label>
+              <Input id="country" name="country" value={formData.country} onChange={handleInputChange} className="mt-1" disabled={!canEdit} />
             </div>
             <div>
-              <Label>Primary Course</Label>
-              <Select value={formData.course_of_interest} onValueChange={(v) => setFormData(f => ({ ...f, course_of_interest: v }))}>
+              <Label>Primary Course *</Label>
+              <Select value={formData.course_of_interest} onValueChange={(v) => setFormData(f => ({ ...f, course_of_interest: v }))} disabled={!canEdit}>
                 <SelectTrigger className="mt-1"><SelectValue placeholder="Select a course" /></SelectTrigger>
                 <SelectContent>
                   {DLH_COURSES.map((c) => (
@@ -223,15 +337,17 @@ export default function Profile() {
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="bio">Bio</Label>
-              <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about yourself..." className="mt-1" rows={3} />
+              <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about yourself..." className="mt-1" rows={3} disabled={!canEdit} />
             </div>
           </div>
-          <div className="mt-4 flex justify-end">
-            <Button onClick={handleSaveProfile} disabled={loading} className="bg-gradient-primary hover:opacity-90">
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Changes
-            </Button>
-          </div>
+          {canEdit && (
+            <div className="mt-4 flex justify-end">
+              <Button onClick={handleSaveProfile} disabled={loading} className="bg-gradient-primary hover:opacity-90">
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {isProfileLocked ? "Save Changes" : "Save & Lock Profile"}
+              </Button>
+            </div>
+          )}
         </motion.div>
 
         {/* Notifications Section */}
@@ -334,6 +450,29 @@ export default function Profile() {
           )}
         </motion.div>
       </div>
+
+      {/* Edit Request Dialog */}
+      <Dialog open={showEditRequestDialog} onOpenChange={setShowEditRequestDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Request Profile Edit</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">Tell us why you need to edit your profile. An admin will review your request.</p>
+          <Textarea
+            value={editRequestReason}
+            onChange={(e) => setEditRequestReason(e.target.value)}
+            placeholder="Reason for editing (e.g., name change, updated phone number...)"
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditRequestDialog(false)}>Cancel</Button>
+            <Button onClick={sendEditRequest} disabled={sendingRequest} className="bg-gradient-primary">
+              {sendingRequest ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Send Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
