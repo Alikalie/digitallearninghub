@@ -18,6 +18,7 @@ interface Profile {
   bio?: string;
   is_verified?: boolean;
   is_suspended?: boolean;
+  is_profile_locked?: boolean;
 }
 
 interface AuthContextType {
