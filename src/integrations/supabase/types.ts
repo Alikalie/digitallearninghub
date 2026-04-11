@@ -481,6 +481,36 @@ export type Database = {
           },
         ]
       }
+      profile_edit_requests: {
+        Row: {
+          created_at: string
+          id: string
+          requested_changes: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          requested_changes?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          requested_changes?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -492,6 +522,7 @@ export type Database = {
           full_name: string
           gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
+          is_profile_locked: boolean | null
           is_suspended: boolean | null
           is_verified: boolean | null
           phone_number: string | null
@@ -509,6 +540,7 @@ export type Database = {
           full_name: string
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
+          is_profile_locked?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
           phone_number?: string | null
@@ -526,6 +558,7 @@ export type Database = {
           full_name?: string
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
+          is_profile_locked?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
           phone_number?: string | null
