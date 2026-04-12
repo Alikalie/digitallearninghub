@@ -389,6 +389,7 @@ export type Database = {
           id: string
           order_index: number | null
           title: string
+          transcript: string | null
           updated_at: string
           video_url: string | null
         }
@@ -399,6 +400,7 @@ export type Database = {
           id?: string
           order_index?: number | null
           title: string
+          transcript?: string | null
           updated_at?: string
           video_url?: string | null
         }
@@ -409,6 +411,7 @@ export type Database = {
           id?: string
           order_index?: number | null
           title?: string
+          transcript?: string | null
           updated_at?: string
           video_url?: string | null
         }

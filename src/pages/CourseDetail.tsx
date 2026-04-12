@@ -1,37 +1,24 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, BookOpen, MessageSquare, Clock, Users, Star, CheckCircle, Loader2, Play } from "lucide-react";
+import { ArrowLeft, BookOpen, MessageSquare, Clock, Users, Star, CheckCircle, Loader2 } from "lucide-react";
 import { DLH_COURSES } from "@/lib/courses";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { LessonVideoPlayer } from "@/components/course/LessonVideoPlayer";
 
 interface Lesson {
   id: string;
   title: string;
   content: string | null;
   video_url: string | null;
+  transcript: string | null;
   order_index: number;
-}
-
-function getYouTubeEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    let videoId = "";
-    if (u.hostname.includes("youtube.com")) {
-      videoId = u.searchParams.get("v") || "";
-    } else if (u.hostname.includes("youtu.be")) {
-      videoId = u.pathname.slice(1);
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-  } catch {
-    return null;
-  }
 }
 
 export default function CourseDetail() {
@@ -51,7 +38,6 @@ export default function CourseDetail() {
   }, [courseId]);
 
   const loadCourseData = async () => {
-    // Check videos_enabled setting
     const { data: settingsData } = await supabase
       .from("admin_settings")
       .select("value")
@@ -64,7 +50,6 @@ export default function CourseDetail() {
       setDbCourse(data);
     }
 
-    // Load lessons for this course (try by courseId first, then by matching title)
     let courseDbId = courseId;
     if (staticCourse) {
       const { data: matchedCourse } = await supabase
@@ -80,9 +65,8 @@ export default function CourseDetail() {
       .select("*")
       .eq("course_id", courseDbId!)
       .order("order_index", { ascending: true });
-    setLessons(lessonData || []);
+    setLessons((lessonData as Lesson[]) || []);
 
-    // Load progress
     if (user && lessonData && lessonData.length > 0) {
       const lessonIds = lessonData.map((l) => l.id);
       const { data: progressData } = await supabase
@@ -95,6 +79,17 @@ export default function CourseDetail() {
 
     setLoading(false);
   };
+
+  const markLessonComplete = useCallback(async (lessonId: string) => {
+    if (!user) return;
+    await supabase.from("course_progress").upsert({
+      user_id: user.id,
+      lesson_id: lessonId,
+      completed: true,
+      completed_at: new Date().toISOString(),
+    });
+    setCompletedLessons((prev) => new Set([...prev, lessonId]));
+  }, [user]);
 
   const toggleLessonComplete = async (lessonId: string) => {
     if (!user) return;
@@ -112,13 +107,7 @@ export default function CourseDetail() {
         return n;
       });
     } else {
-      await supabase.from("course_progress").upsert({
-        user_id: user.id,
-        lesson_id: lessonId,
-        completed: true,
-        completed_at: new Date().toISOString(),
-      });
-      setCompletedLessons((prev) => new Set([...prev, lessonId]));
+      await markLessonComplete(lessonId);
     }
   };
 
@@ -182,7 +171,6 @@ export default function CourseDetail() {
           <h1 className="text-2xl lg:text-3xl font-bold mb-4">{course.title}</h1>
           <p className="text-muted-foreground mb-8">{course.description}</p>
 
-          {/* Progress Bar */}
           {lessons.length > 0 && (
             <div className="bg-card rounded-2xl border border-border p-4 mb-6">
               <div className="flex items-center justify-between mb-2">
@@ -208,12 +196,10 @@ export default function CourseDetail() {
             </div>
           )}
 
-          {/* Lessons with Videos */}
           {lessons.length > 0 && (
             <div className="space-y-4 mb-8">
               <h2 className="text-lg font-semibold">Lessons</h2>
               {lessons.map((lesson, i) => {
-                const embedUrl = lesson.video_url ? getYouTubeEmbedUrl(lesson.video_url) : null;
                 const isCompleted = completedLessons.has(lesson.id);
                 return (
                   <motion.div
@@ -240,23 +226,14 @@ export default function CourseDetail() {
                     </div>
 
                     {videosEnabled && lesson.video_url && (
-                      <div className="mt-3">
-                        {embedUrl ? (
-                          <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                            <iframe
-                              src={embedUrl}
-                              title={lesson.title}
-                              className="w-full h-full"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
-                            />
-                          </div>
-                        ) : (
-                          <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                            <video src={lesson.video_url} controls className="w-full h-full" />
-                          </div>
-                        )}
-                      </div>
+                      <LessonVideoPlayer
+                        lessonId={lesson.id}
+                        videoUrl={lesson.video_url}
+                        title={lesson.title}
+                        transcript={lesson.transcript}
+                        isCompleted={isCompleted}
+                        onAutoComplete={markLessonComplete}
+                      />
                     )}
                   </motion.div>
                 );
