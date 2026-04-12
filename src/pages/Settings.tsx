@@ -36,7 +36,7 @@ export default function Settings() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -142,6 +142,10 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
+    if (!passwordForm.oldPassword) {
+      toast.error("Please enter your current password");
+      return;
+    }
     if (passwordForm.newPassword.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
@@ -152,10 +156,19 @@ export default function Settings() {
     }
     setChangingPassword(true);
     try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: passwordForm.oldPassword,
+      });
+      if (signInError) {
+        toast.error("Current password is incorrect");
+        setChangingPassword(false);
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
       if (error) throw error;
       toast.success("Password updated successfully");
-      setPasswordForm({ newPassword: "", confirmPassword: "" });
+      setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error: any) {
       toast.error(error.message || "Failed to update password");
     } finally {
@@ -452,6 +465,17 @@ export default function Settings() {
                       Update your password to keep your account secure
                     </p>
                     <div className="grid gap-3 sm:grid-cols-2 max-w-md">
+                      <div className="sm:col-span-2">
+                        <Label htmlFor="old_password" className="text-xs">Current Password</Label>
+                        <Input
+                          id="old_password"
+                          type="password"
+                          value={passwordForm.oldPassword}
+                          onChange={(e) => setPasswordForm(p => ({ ...p, oldPassword: e.target.value }))}
+                          placeholder="••••••••"
+                          className="mt-1"
+                        />
+                      </div>
                       <div>
                         <Label htmlFor="new_password" className="text-xs">New Password</Label>
                         <Input
