@@ -39,7 +39,7 @@ export default function Profile() {
   const [showSecurity, setShowSecurity] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
   const [isProfileLocked, setIsProfileLocked] = useState(false);
   const [editRequestStatus, setEditRequestStatus] = useState<string | null>(null);
   const [showEditRequestDialog, setShowEditRequestDialog] = useState(false);
@@ -204,6 +204,10 @@ export default function Profile() {
   };
 
   const handleChangePassword = async () => {
+    if (!passwordForm.oldPassword) {
+      toast.error("Please enter your current password");
+      return;
+    }
     if (passwordForm.newPassword.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
@@ -214,10 +218,20 @@ export default function Profile() {
     }
     setChangingPassword(true);
     try {
+      // Verify old password by re-signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: passwordForm.oldPassword,
+      });
+      if (signInError) {
+        toast.error("Current password is incorrect");
+        setChangingPassword(false);
+        return;
+      }
       const { error } = await supabase.auth.updateUser({ password: passwordForm.newPassword });
       if (error) throw error;
       toast.success("Password updated successfully");
-      setPasswordForm({ newPassword: "", confirmPassword: "" });
+      setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error: any) {
       toast.error(error.message || "Failed to update password");
     } finally {
@@ -423,6 +437,12 @@ export default function Profile() {
               <div>
                 <p className="font-medium text-sm mb-2">Change Password</p>
                 <div className="grid gap-3 sm:grid-cols-2 max-w-md">
+                  <div className="sm:col-span-2">
+                    <Label className="text-xs">Current Password</Label>
+                    <Input type="password" value={passwordForm.oldPassword}
+                      onChange={(e) => setPasswordForm(p => ({ ...p, oldPassword: e.target.value }))}
+                      placeholder="••••••••" className="mt-1" />
+                  </div>
                   <div>
                     <Label className="text-xs">New Password</Label>
                     <Input type="password" value={passwordForm.newPassword}
