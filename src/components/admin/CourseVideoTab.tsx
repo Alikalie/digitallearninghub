@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -15,7 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Video, Plus, Trash2, Upload, Loader2, Youtube, ExternalLink } from "lucide-react";
+import { Video, Plus, Trash2, Upload, Loader2, Youtube, ExternalLink, FileText, Edit } from "lucide-react";
 
 interface Lesson {
   id: string;
@@ -24,6 +25,7 @@ interface Lesson {
   video_url: string | null;
   order_index: number | null;
   content: string | null;
+  transcript: string | null;
 }
 
 interface Course {
@@ -38,7 +40,8 @@ export function CourseVideoTab() {
   const [loading, setLoading] = useState(true);
   const [videosEnabled, setVideosEnabled] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", video_url: "", order_index: 0 });
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [form, setForm] = useState({ title: "", video_url: "", order_index: 0, content: "", transcript: "" });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -93,7 +96,7 @@ export function CourseVideoTab() {
       .select("*")
       .eq("course_id", courseId)
       .order("order_index", { ascending: true });
-    setLessons(data || []);
+    setLessons((data as Lesson[]) || []);
   };
 
   const uploadVideo = async (file: File) => {
@@ -112,33 +115,58 @@ export function CourseVideoTab() {
     setUploading(false);
   };
 
+  const openAddDialog = () => {
+    setEditingLesson(null);
+    setForm({ title: "", video_url: "", order_index: lessons.length, content: "", transcript: "" });
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (lesson: Lesson) => {
+    setEditingLesson(lesson);
+    setForm({
+      title: lesson.title,
+      video_url: lesson.video_url || "",
+      order_index: lesson.order_index || 0,
+      content: lesson.content || "",
+      transcript: lesson.transcript || "",
+    });
+    setDialogOpen(true);
+  };
+
   const saveLesson = async () => {
     if (!form.title.trim() || !selectedCourse) {
       toast.error("Title and course are required");
       return;
     }
-    const { error } = await supabase.from("lessons").insert({
+
+    const payload = {
       course_id: selectedCourse,
       title: form.title,
       video_url: form.video_url || null,
       order_index: form.order_index,
-    });
-    if (error) {
-      toast.error("Failed to add video: " + error.message);
-      return;
+      content: form.content || null,
+      transcript: form.transcript || null,
+    };
+
+    if (editingLesson) {
+      const { error } = await supabase.from("lessons").update(payload).eq("id", editingLesson.id);
+      if (error) { toast.error("Failed to update: " + error.message); return; }
+      toast.success("Lesson updated!");
+    } else {
+      const { error } = await supabase.from("lessons").insert(payload);
+      if (error) { toast.error("Failed to add: " + error.message); return; }
+      toast.success("Video/lesson added!");
     }
-    toast.success("Video/lesson added!");
+
     setDialogOpen(false);
-    setForm({ title: "", video_url: "", order_index: lessons.length });
+    setEditingLesson(null);
+    setForm({ title: "", video_url: "", order_index: lessons.length, content: "", transcript: "" });
     loadLessons(selectedCourse);
   };
 
   const deleteLesson = async (id: string) => {
     const { error } = await supabase.from("lessons").delete().eq("id", id);
-    if (error) {
-      toast.error("Failed to delete");
-      return;
-    }
+    if (error) { toast.error("Failed to delete"); return; }
     toast.success("Deleted");
     if (selectedCourse) loadLessons(selectedCourse);
   };
@@ -155,7 +183,6 @@ export function CourseVideoTab() {
 
   return (
     <div className="space-y-6">
-      {/* Toggle */}
       <div className="dlh-card p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -186,7 +213,7 @@ export function CourseVideoTab() {
               </Select>
             </div>
             {selectedCourse && (
-              <Button onClick={() => { setForm({ title: "", video_url: "", order_index: lessons.length }); setDialogOpen(true); }} className="bg-gradient-primary">
+              <Button onClick={openAddDialog} className="bg-gradient-primary">
                 <Plus className="mr-2 h-4 w-4" />Add Video
               </Button>
             )}
@@ -200,13 +227,14 @@ export function CourseVideoTab() {
                     <TableHead>#</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Transcript</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {lessons.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                         No videos added yet for this course
                       </TableCell>
                     </TableRow>
@@ -227,7 +255,17 @@ export function CourseVideoTab() {
                           )}
                         </TableCell>
                         <TableCell>
+                          {l.transcript ? (
+                            <Badge variant="outline" className="gap-1"><FileText size={12} />Yes</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">None</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => openEditDialog(l)}>
+                              <Edit size={14} />
+                            </Button>
                             {l.video_url && (
                               <Button size="sm" variant="ghost" asChild>
                                 <a href={l.video_url} target="_blank" rel="noopener noreferrer"><ExternalLink size={14} /></a>
@@ -249,12 +287,18 @@ export function CourseVideoTab() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add Video/Lesson</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingLesson ? "Edit Lesson" : "Add Video/Lesson"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Title *</Label>
               <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="mt-1" placeholder="e.g. Introduction to HTML" />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Input value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} className="mt-1" placeholder="Brief lesson description" />
             </div>
             <div>
               <Label>YouTube URL or Video Link</Label>
@@ -270,13 +314,24 @@ export function CourseVideoTab() {
               </Button>
             </div>
             <div>
+              <Label>Transcript</Label>
+              <Textarea
+                value={form.transcript}
+                onChange={e => setForm(f => ({ ...f, transcript: e.target.value }))}
+                className="mt-1 min-h-[100px]"
+                placeholder="Paste or type the video transcript here..."
+              />
+            </div>
+            <div>
               <Label>Order</Label>
               <Input type="number" value={form.order_index} onChange={e => setForm(f => ({ ...f, order_index: parseInt(e.target.value) || 0 }))} className="mt-1" />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={saveLesson} className="bg-gradient-primary">Save</Button>
+            <Button onClick={saveLesson} className="bg-gradient-primary">
+              {editingLesson ? "Update" : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
