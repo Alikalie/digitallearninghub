@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CountrySelect } from "@/components/CountrySelect";
 import { DLH_COURSES } from "@/lib/courses";
 
 const loginSchema = z.object({
@@ -349,7 +350,12 @@ export default function Auth() {
                         </div>
                         <div>
                           <Label>Country *</Label>
-                          <Input placeholder="Your country" className="mt-1" {...signupForm.register("country")} />
+                          <div className="mt-1">
+                            <CountrySelect
+                              value={signupForm.watch("country")}
+                              onChange={(v) => signupForm.setValue("country", v, { shouldValidate: true })}
+                            />
+                          </div>
                           {signupForm.formState.errors.country && <p className="text-sm text-destructive mt-1">{signupForm.formState.errors.country.message}</p>}
                         </div>
                         <div>
