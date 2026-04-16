@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CountrySelect } from "@/components/CountrySelect";
 import { DLH_COURSES } from "@/lib/courses";
 
 const loginSchema = z.object({
@@ -168,6 +169,24 @@ export default function Auth() {
                 { question: "Registered as", answer: "Tutor (from signup)" },
               ],
             });
+
+            // Notify all admins (in-app notification)
+            try {
+              const { data: adminRoles } = await supabase
+                .from("user_roles")
+                .select("user_id")
+                .in("role", ["admin", "super_admin"]);
+              if (adminRoles && adminRoles.length > 0) {
+                const notifs = adminRoles.map((r) => ({
+                  user_id: r.user_id,
+                  title: "New tutor application",
+                  message: `${full_name} (${data.email}) just registered as a tutor and is awaiting approval.`,
+                }));
+                await supabase.from("notifications").insert(notifs);
+              }
+            } catch (notifyErr) {
+              console.warn("Failed to notify admins:", notifyErr);
+            }
           }
         }
         setShowVerifyDialog(true);
@@ -349,7 +368,12 @@ export default function Auth() {
                         </div>
                         <div>
                           <Label>Country *</Label>
-                          <Input placeholder="Your country" className="mt-1" {...signupForm.register("country")} />
+                          <div className="mt-1">
+                            <CountrySelect
+                              value={signupForm.watch("country")}
+                              onChange={(v) => signupForm.setValue("country", v, { shouldValidate: true })}
+                            />
+                          </div>
                           {signupForm.formState.errors.country && <p className="text-sm text-destructive mt-1">{signupForm.formState.errors.country.message}</p>}
                         </div>
                         <div>

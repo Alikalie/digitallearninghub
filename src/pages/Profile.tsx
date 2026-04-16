@@ -19,6 +19,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
+import { CountrySelect } from "@/components/CountrySelect";
+import { getFlagEmoji, findCountryByName } from "@/lib/countries";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Mail, Phone, MapPin, BookOpen, User as UserIcon, GraduationCap, BadgeCheck } from "lucide-react";
 import { DLH_COURSES } from "@/lib/courses";
 
 interface Notification {
@@ -285,38 +290,124 @@ export default function Profile() {
           </motion.div>
         )}
 
-        {/* Avatar & Info */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="dlh-card p-5">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xl">{initials}</AvatarFallback>
-              </Avatar>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file && user) { await uploadAvatar(user.id, file); await refreshProfile(); }
-                }}
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-              </button>
+        {/* Professional Profile Header */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          {/* Gradient banner */}
+          <div className="h-24 bg-gradient-primary" />
+          <div className="px-5 pb-5 -mt-12">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="relative">
+                <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{initials}</AvatarFallback>
+                </Avatar>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file && user) { await uploadAvatar(user.id, file); await refreshProfile(); }
+                  }}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  title="Change photo"
+                  className="absolute bottom-1 right-1 p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-md border-2 border-card"
+                >
+                  {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                </button>
+              </div>
+              <div className="flex-1 min-w-0 sm:pb-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-bold text-xl truncate">{profile?.full_name || "Set up your profile"}</h2>
+                  {profile?.is_verified && (
+                    <BadgeCheck className="text-primary flex-shrink-0" size={18} />
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
+                  <Mail size={12} /> {profile?.email}
+                </p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <Badge variant="secondary" className="capitalize gap-1">
+                    {profile?.user_type === "tutor" ? <GraduationCap size={12} /> : <BookOpen size={12} />}
+                    {profile?.user_type || "Student"}
+                  </Badge>
+                  {profile?.country && (() => {
+                    const c = findCountryByName(profile.country);
+                    return (
+                      <Badge variant="outline" className="gap-1">
+                        <span className="leading-none">{c ? getFlagEmoji(c.code) : "🌐"}</span>
+                        {profile.country}
+                      </Badge>
+                    );
+                  })()}
+                  {profile?.course_of_interest && (
+                    <Badge variant="outline" className="gap-1 max-w-[200px]">
+                      <BookOpen size={12} />
+                      <span className="truncate">{profile.course_of_interest}</span>
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold text-lg">{profile?.full_name || "Set up your profile"}</p>
-              <p className="text-sm text-muted-foreground">{profile?.email}</p>
-              <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                {profile?.user_type || "Student"} • {profile?.country || "—"}
-              </p>
+
+            {/* Profile completion */}
+            {(() => {
+              const fields = [
+                profile?.full_name, profile?.phone_number, profile?.country,
+                profile?.course_of_interest, profile?.gender, profile?.bio, profile?.avatar_url,
+              ];
+              const filled = fields.filter(Boolean).length;
+              const pct = Math.round((filled / fields.length) * 100);
+              return (
+                <div className="mt-5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium text-muted-foreground">Profile completion</span>
+                    <span className="text-xs font-semibold">{pct}%</span>
+                  </div>
+                  <Progress value={pct} className="h-1.5" />
+                </div>
+              );
+            })()}
+
+            {/* Quick info grid (read-only summary of registration data) */}
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50">
+                <Phone size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Phone</p>
+                  <p className="font-medium truncate text-xs">{profile?.phone_number || "—"}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50">
+                <MapPin size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Country</p>
+                  <p className="font-medium truncate text-xs">{profile?.country || "—"}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50">
+                <UserIcon size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Gender</p>
+                  <p className="font-medium truncate text-xs capitalize">{profile?.gender?.replace(/_/g, " ") || "—"}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50">
+                <BookOpen size={14} className="text-primary mt-0.5 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Course</p>
+                  <p className="font-medium truncate text-xs">{profile?.course_of_interest || "—"}</p>
+                </div>
+              </div>
             </div>
           </div>
+        </motion.div>
 
-          {/* Form */}
+        {/* Editable Personal Info */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="dlh-card p-5">
+          <h3 className="font-semibold mb-1">Personal Information</h3>
+          <p className="text-xs text-muted-foreground mb-4">Information you provided during registration.</p>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="first_name">First Name *</Label>
@@ -332,7 +423,13 @@ export default function Profile() {
             </div>
             <div>
               <Label htmlFor="country">Country *</Label>
-              <Input id="country" name="country" value={formData.country} onChange={handleInputChange} className="mt-1" disabled={!canEdit} />
+              <div className="mt-1">
+                <CountrySelect
+                  value={formData.country}
+                  onChange={(v) => setFormData((f) => ({ ...f, country: v }))}
+                  disabled={!canEdit}
+                />
+              </div>
             </div>
             <div>
               <Label>Primary Course *</Label>
@@ -347,7 +444,7 @@ export default function Profile() {
             </div>
             <div>
               <Label>Gender</Label>
-              <Input value={profile?.gender || "—"} disabled className="mt-1 bg-muted" />
+              <Input value={profile?.gender?.replace(/_/g, " ") || "—"} disabled className="mt-1 bg-muted capitalize" />
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="bio">Bio</Label>
