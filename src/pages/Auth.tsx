@@ -169,6 +169,24 @@ export default function Auth() {
                 { question: "Registered as", answer: "Tutor (from signup)" },
               ],
             });
+
+            // Notify all admins (in-app notification)
+            try {
+              const { data: adminRoles } = await supabase
+                .from("user_roles")
+                .select("user_id")
+                .in("role", ["admin", "super_admin"]);
+              if (adminRoles && adminRoles.length > 0) {
+                const notifs = adminRoles.map((r) => ({
+                  user_id: r.user_id,
+                  title: "New tutor application",
+                  message: `${full_name} (${data.email}) just registered as a tutor and is awaiting approval.`,
+                }));
+                await supabase.from("notifications").insert(notifs);
+              }
+            } catch (notifyErr) {
+              console.warn("Failed to notify admins:", notifyErr);
+            }
           }
         }
         setShowVerifyDialog(true);
