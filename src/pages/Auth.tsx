@@ -13,11 +13,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { DLHLogo } from "@/components/DLHLogo";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, ArrowLeft, ArrowRight, MailCheck } from "lucide-react";
+import { Loader2, Eye, EyeOff, ArrowLeft, ArrowRight, MailCheck, GraduationCap, BookOpen } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { DLH_COURSES } from "@/lib/courses";
 
 const loginSchema = z.object({
@@ -29,17 +31,19 @@ const signupSchema = z.object({
   first_name: z.string().min(2, "First name must be at least 2 characters").max(50),
   last_name: z.string().min(2, "Last name must be at least 2 characters").max(50),
   email: z.string().email("Please enter a valid email").max(255),
-  phone_number: z.string().optional(),
+  phone_number: z.string().min(6, "Phone number is required"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
     .max(72)
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number"),
   confirm_password: z.string(),
-  country: z.string().optional(),
-  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
+  country: z.string().min(2, "Country is required"),
+  gender: z.enum(["male", "female", "other", "prefer_not_to_say"], {
+    errorMap: () => ({ message: "Please select your gender" }),
+  }),
   user_type: z.enum(["student", "tutor"]),
-  course_of_interest: z.string().optional(),
+  course_of_interest: z.string().min(1, "Please select a primary course"),
   agree_terms: z.boolean().refine((val) => val === true, {
     message: "You must agree to the terms and conditions",
   }),
@@ -60,12 +64,31 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [termsText, setTermsText] = useState<string>("");
+  const [privacyText, setPrivacyText] = useState<string>("");
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
 
   useEffect(() => {
     if (user) navigate("/dashboard");
   }, [user, navigate]);
+
+  // Load admin-managed Terms & Privacy
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("admin_settings")
+        .select("key, value")
+        .in("key", ["terms_text", "privacy_text"]);
+      data?.forEach((r) => {
+        const v = typeof r.value === "string" ? r.value : (r.value ? String(r.value) : "");
+        if (r.key === "terms_text") setTermsText(v);
+        if (r.key === "privacy_text") setPrivacyText(v);
+      });
+    })();
+  }, []);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -80,6 +103,8 @@ export default function Auth() {
       user_type: "student", course_of_interest: "", agree_terms: false,
     },
   });
+
+  const userType = signupForm.watch("user_type");
 
   const handleLogin = async (data: LoginFormData) => {
     setLoading(true);
@@ -125,6 +150,26 @@ export default function Auth() {
           toast.error(error.message, { duration: 60000, position: "top-center" });
         }
       } else {
+        // If signed up as tutor, also create a pending tutor application so it
+        // shows up in admin dashboard and tutor status persists across sessions.
+        if (data.user_type === "tutor") {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const newUserId = sessionData.session?.user?.id;
+          if (newUserId) {
+            await supabase.from("tutor_applications").insert({
+              user_id: newUserId,
+              status: "pending",
+              answers: [
+                { question: "Full Name", answer: full_name },
+                { question: "Email", answer: data.email },
+                { question: "Phone", answer: data.phone_number },
+                { question: "Country", answer: data.country },
+                { question: "Primary Course / Subject", answer: data.course_of_interest },
+                { question: "Registered as", answer: "Tutor (from signup)" },
+              ],
+            });
+          }
+        }
         setShowVerifyDialog(true);
       }
     } catch (error: any) {
@@ -143,26 +188,32 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gradient-to-br from-background via-background to-primary/5">
       {/* Left Side - Form */}
       <div className="flex-1 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-md">
-          {/* Centered Logo Card */}
-          <div className="flex flex-col items-center mb-6">
-            <Link to="/" className="inline-block">
-              <DLHLogo size="md" />
-            </Link>
-            <p className="text-sm text-muted-foreground mt-2">Digital Learning Hub</p>
-          </div>
-
           <motion.div
             key={mode}
-            initial={{ opacity: 0, x: mode === "signup" ? 20 : -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            className="rounded-2xl border border-border bg-card shadow-2xl overflow-hidden"
           >
-            {/* Registration Card */}
-            <div className="rounded-2xl border border-border bg-card shadow-lg p-6 sm:p-8">
+            {/* Header card with centered logo + name */}
+            <div className="bg-gradient-primary px-6 py-6 flex flex-col items-center justify-center text-center">
+              <Link to="/" className="inline-block mb-2 bg-white/10 backdrop-blur-md rounded-2xl p-3">
+                <DLHLogo size="md" showText={false} />
+              </Link>
+              <h1 className="text-xl font-bold text-primary-foreground tracking-tight">
+                Digital Learning Hub
+              </h1>
+              <p className="text-xs text-primary-foreground/80 mt-0.5">
+                Your AI-powered learning companion
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 sm:p-8">
               {mode === "login" ? (
                 <>
                   <h2 className="text-2xl font-bold mb-1 text-center">Welcome back</h2>
@@ -253,27 +304,57 @@ export default function Auth() {
 
                     {step === 2 && (
                       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                        {/* Role selector as cards */}
                         <div>
-                          <Label>I am a *</Label>
-                          <Select onValueChange={(value: "student" | "tutor") => signupForm.setValue("user_type", value)} defaultValue={signupForm.getValues("user_type")}>
-                            <SelectTrigger className="mt-1"><SelectValue placeholder="Select your role" /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="student">Student</SelectItem>
-                              <SelectItem value="tutor">Tutor</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label>I am registering as *</Label>
+                          <div className="grid grid-cols-2 gap-3 mt-2">
+                            <button
+                              type="button"
+                              onClick={() => signupForm.setValue("user_type", "student")}
+                              className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 transition-all ${
+                                userType === "student"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:border-primary/40"
+                              }`}
+                            >
+                              <BookOpen className={`h-5 w-5 ${userType === "student" ? "text-primary" : "text-muted-foreground"}`} />
+                              <span className="text-sm font-semibold">Student</span>
+                              <span className="text-[10px] text-muted-foreground">Learn & grow</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => signupForm.setValue("user_type", "tutor")}
+                              className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 transition-all ${
+                                userType === "tutor"
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:border-primary/40"
+                              }`}
+                            >
+                              <GraduationCap className={`h-5 w-5 ${userType === "tutor" ? "text-primary" : "text-muted-foreground"}`} />
+                              <span className="text-sm font-semibold">Tutor</span>
+                              <span className="text-[10px] text-muted-foreground">Teach & inspire</span>
+                            </button>
+                          </div>
+                          {userType === "tutor" && (
+                            <p className="text-xs text-primary/80 mt-2 bg-primary/5 rounded-md p-2">
+                              Tutor accounts require admin approval. Your application will be submitted automatically.
+                            </p>
+                          )}
                         </div>
+
                         <div>
-                          <Label>Phone Number</Label>
+                          <Label>Phone Number *</Label>
                           <Input placeholder="+1234567890" className="mt-1" {...signupForm.register("phone_number")} />
+                          {signupForm.formState.errors.phone_number && <p className="text-sm text-destructive mt-1">{signupForm.formState.errors.phone_number.message}</p>}
                         </div>
                         <div>
-                          <Label>Country</Label>
+                          <Label>Country *</Label>
                           <Input placeholder="Your country" className="mt-1" {...signupForm.register("country")} />
+                          {signupForm.formState.errors.country && <p className="text-sm text-destructive mt-1">{signupForm.formState.errors.country.message}</p>}
                         </div>
                         <div>
-                          <Label>Gender</Label>
-                          <Select onValueChange={(value: any) => signupForm.setValue("gender", value)}>
+                          <Label>Gender *</Label>
+                          <Select onValueChange={(value: any) => signupForm.setValue("gender", value, { shouldValidate: true })}>
                             <SelectTrigger className="mt-1"><SelectValue placeholder="Select gender" /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="male">Male</SelectItem>
@@ -282,10 +363,11 @@ export default function Auth() {
                               <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                             </SelectContent>
                           </Select>
+                          {signupForm.formState.errors.gender && <p className="text-sm text-destructive mt-1">{signupForm.formState.errors.gender.message}</p>}
                         </div>
                         <div>
-                          <Label>Choose Your Primary Course *</Label>
-                          <Select onValueChange={(value) => signupForm.setValue("course_of_interest", value)}>
+                          <Label>{userType === "tutor" ? "Subject You Teach *" : "Choose Your Primary Course *"}</Label>
+                          <Select onValueChange={(value) => signupForm.setValue("course_of_interest", value, { shouldValidate: true })}>
                             <SelectTrigger className="mt-1"><SelectValue placeholder="Select a course" /></SelectTrigger>
                             <SelectContent>
                               {DLH_COURSES.map((course) => (
@@ -293,13 +375,16 @@ export default function Auth() {
                               ))}
                             </SelectContent>
                           </Select>
-                          <p className="text-xs text-muted-foreground mt-1">This will be your primary course of study at DLH</p>
+                          {signupForm.formState.errors.course_of_interest && <p className="text-sm text-destructive mt-1">{signupForm.formState.errors.course_of_interest.message}</p>}
                         </div>
 
                         <div className="flex items-start space-x-2">
-                          <Checkbox id="agree_terms" onCheckedChange={(checked) => signupForm.setValue("agree_terms", checked as boolean)} />
+                          <Checkbox id="agree_terms" onCheckedChange={(checked) => signupForm.setValue("agree_terms", checked as boolean, { shouldValidate: true })} />
                           <label htmlFor="agree_terms" className="text-sm text-muted-foreground leading-tight">
-                            I agree to the Terms of Service and Privacy Policy
+                            I agree to the{" "}
+                            <button type="button" onClick={() => setShowTerms(true)} className="text-primary font-medium hover:underline">Terms of Service</button>
+                            {" "}and{" "}
+                            <button type="button" onClick={() => setShowPrivacy(true)} className="text-primary font-medium hover:underline">Privacy Policy</button>
                           </label>
                         </div>
                         {signupForm.formState.errors.agree_terms && <p className="text-sm text-destructive">{signupForm.formState.errors.agree_terms.message}</p>}
@@ -350,18 +435,41 @@ export default function Auth() {
         </DialogContent>
       </Dialog>
 
-      {/* Right Side - Decorative (desktop only) */}
-      <div className="hidden lg:flex flex-1 bg-gradient-hero items-center justify-center p-12">
-        <div className="max-w-md text-center text-primary-foreground">
-          <div className="w-24 h-24 rounded-2xl bg-white/10 backdrop-blur-lg flex items-center justify-center mx-auto mb-8">
-            <DLHLogo size="lg" showText={false} />
-          </div>
-          <h2 className="text-3xl font-bold mb-4">Your AI-Powered Learning Companion</h2>
-          <p className="text-primary-foreground/80">
-            Experience personalized tutoring, instant answers, and creative tools designed to help you achieve your educational goals.
-          </p>
-        </div>
-      </div>
+      {/* Terms Dialog */}
+      <Dialog open={showTerms} onOpenChange={setShowTerms}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Terms of Service</DialogTitle>
+            <DialogDescription>Please read carefully before creating an account.</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {termsText || "By creating an account on Digital Learning Hub, you agree to use the platform responsibly, respect other learners and tutors, and follow our community standards. Content shared on the platform must be original or properly attributed. Misuse of the platform may result in suspension. Administrators reserve the right to update these terms at any time."}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button onClick={() => setShowTerms(false)} className="bg-gradient-primary">I Understand</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Privacy Dialog */}
+      <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Privacy Policy</DialogTitle>
+            <DialogDescription>How we protect and use your data.</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {privacyText || "Digital Learning Hub collects only the information necessary to provide our learning services: your name, email, phone number, country, gender and course interest. Your data is stored securely and is never sold to third parties. You may request account deletion at any time. We use cookies only for authentication and session management."}
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button onClick={() => setShowPrivacy(false)} className="bg-gradient-primary">I Understand</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

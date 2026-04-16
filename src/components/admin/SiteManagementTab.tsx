@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Save, Upload, Globe, Phone, Mail, MapPin, Video, Music } from "lucide-react";
+import { Loader2, Save, Upload, Globe, Phone, Mail, MapPin, Video, Music, ShieldCheck, FileText } from "lucide-react";
 
 interface SettingsForm {
   contact_email: string;
@@ -17,6 +17,8 @@ interface SettingsForm {
   anthem_video_url: string;
   site_name: string;
   site_tagline: string;
+  terms_text: string;
+  privacy_text: string;
 }
 
 export function SiteManagementTab() {
@@ -30,6 +32,8 @@ export function SiteManagementTab() {
     anthem_video_url: "",
     site_name: "",
     site_tagline: "",
+    terms_text: "",
+    privacy_text: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -163,6 +167,36 @@ export function SiteManagementTab() {
               {form.anthem_video_url ? "Replace Anthem Video" : "Upload Anthem Video"}
             </Button>
             <div><Label className="text-xs">Or paste URL</Label><Input value={form.anthem_video_url} onChange={(e) => setForm(f => ({ ...f, anthem_video_url: e.target.value }))} className="mt-1 text-xs" placeholder="https://..." /></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Legal: Terms & Privacy */}
+      <div className="dlh-card p-6">
+        <h3 className="font-semibold text-lg mb-2 flex items-center gap-2"><ShieldCheck size={20} /> Legal Documents</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          These will be shown to users during signup when they click "Terms of Service" and "Privacy Policy".
+        </p>
+        <div className="space-y-4">
+          <div>
+            <Label className="flex items-center gap-1"><FileText size={14} /> Terms of Service</Label>
+            <Textarea
+              value={form.terms_text}
+              onChange={(e) => setForm(f => ({ ...f, terms_text: e.target.value }))}
+              className="mt-1 font-mono text-xs"
+              rows={8}
+              placeholder="Enter your full Terms of Service here. Plain text or use blank lines for paragraphs."
+            />
+          </div>
+          <div>
+            <Label className="flex items-center gap-1"><ShieldCheck size={14} /> Privacy Policy</Label>
+            <Textarea
+              value={form.privacy_text}
+              onChange={(e) => setForm(f => ({ ...f, privacy_text: e.target.value }))}
+              className="mt-1 font-mono text-xs"
+              rows={8}
+              placeholder="Enter your full Privacy Policy here. Plain text or use blank lines for paragraphs."
+            />
           </div>
         </div>
       </div>
