@@ -321,9 +321,23 @@ export default function ClassroomView() {
           <Button variant="ghost" size="icon" onClick={() => navigate(isTutor ? "/tutor" : "/classrooms")}>
             <ArrowLeft size={20} />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">{classroom.name}</h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {classroom.icon_url ? (
+            <img src={classroom.icon_url} alt={classroom.name} className="w-12 h-12 rounded-lg object-cover border border-border flex-shrink-0" />
+          ) : (
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <BookOpen className="text-primary" size={20} />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold truncate">{classroom.name}</h1>
+              {canEditClassroom && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openEdit} title="Edit classroom">
+                  <Pencil size={14} />
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
               <button onClick={() => { navigator.clipboard.writeText(classroom.classroom_code); toast.success("Code copied!"); }} className="flex items-center gap-1 hover:text-primary">
                 <Copy size={12} /> Code: <span className="font-mono">{classroom.classroom_code}</span>
               </button>
