@@ -405,6 +405,27 @@ export function ClassroomManagementTab() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <Label>Classroom Icon (optional)</Label>
+              <div className="mt-2 flex items-center gap-3">
+                {classroomForm.icon_url ? (
+                  <img src={classroomForm.icon_url} alt="Icon" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                ) : (
+                  <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-xs">No icon</div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="admin-cls-icon"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && uploadIcon(e.target.files[0])}
+                />
+                <Button type="button" size="sm" variant="outline" disabled={iconUploading} onClick={() => document.getElementById("admin-cls-icon")?.click()}>
+                  {iconUploading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                  {classroomForm.icon_url ? "Change" : "Upload"}
+                </Button>
+              </div>
+            </div>
+            <div>
               <Label>Classroom Name *</Label>
               <Input value={classroomForm.name} onChange={(e) => setClassroomForm(f => ({ ...f, name: e.target.value }))} className="mt-1" placeholder="e.g. Web Development 101" />
             </div>
