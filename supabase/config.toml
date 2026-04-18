@@ -1,1 +1,4 @@
 project_id = "rfydhgqvlfjujqqnyvfj"
+
+[functions.notify-tutor-application]
+verify_jwt = false
