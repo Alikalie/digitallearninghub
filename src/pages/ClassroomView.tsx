@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import PostComments, { UserAvatar } from "@/components/classroom/PostComments";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -432,6 +433,8 @@ export default function ClassroomView() {
                     </Button>
                   )}
                 </div>
+
+                <PostComments postId={post.id} currentUserId={user!.id} canModerate={isTutor || isAdmin} />
               </motion.div>
             ))}
           </TabsContent>
@@ -440,17 +443,19 @@ export default function ClassroomView() {
             <div className="dlh-card divide-y divide-border">
               {members.map((m) => (
                 <div key={m.id} className="flex items-center gap-3 p-3">
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                      {(m.profile?.full_name || "U").split(" ").map((n) => n[0]).join("").toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    profile={{ user_id: m.user_id, full_name: m.profile?.full_name ?? null, avatar_url: m.profile?.avatar_url ?? null }}
+                    userId={m.user_id}
+                    size={36}
+                  />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{m.profile?.full_name || "Unknown"}</p>
-                    <p className="text-xs text-muted-foreground">{m.profile?.email}</p>
+                    <p className="font-medium text-sm truncate">{m.profile?.full_name || "Member"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{m.profile?.email}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground font-mono">#{m.id.slice(0, 8)}</span>
-                  {isTutor && (
+                  {m.user_id === classroom.tutor_id && (
+                    <Badge variant="secondary" className="text-[10px]">Tutor</Badge>
+                  )}
+                  {isTutor && m.user_id !== classroom.tutor_id && (
                     <Button size="sm" variant="ghost" className="text-destructive h-7" onClick={() => removeMember(m.user_id)}>
                       <Trash2 size={14} />
                     </Button>
