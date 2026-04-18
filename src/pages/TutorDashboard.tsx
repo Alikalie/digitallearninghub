@@ -310,15 +310,26 @@ export default function TutorDashboard() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {classrooms.map((room, i) => (
             <motion.div key={room.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20" onClick={() => navigate(`/classroom/${room.id}`)}>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 overflow-hidden" onClick={() => navigate(`/classroom/${room.id}`)}>
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-base line-clamp-1">{room.name}</CardTitle>
-                    <Badge variant={room.is_active ? "default" : "secondary"} className="text-xs ml-2 flex-shrink-0">
-                      {room.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                  <div className="flex items-start gap-3">
+                    {room.icon_url ? (
+                      <img src={room.icon_url} alt={room.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-border" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="text-primary" size={20} />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-base line-clamp-1">{room.name}</CardTitle>
+                        <Badge variant={room.is_active ? "default" : "secondary"} className="text-xs flex-shrink-0">
+                          {room.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      {room.description && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{room.description}</p>}
+                    </div>
                   </div>
-                  {room.description && <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{room.description}</p>}
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="flex items-center justify-between text-sm">
@@ -351,6 +362,36 @@ export default function TutorDashboard() {
           <DialogContent>
             <DialogHeader><DialogTitle>{editingClassroom ? "Edit Classroom" : "Create Classroom"}</DialogTitle></DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label>Classroom Icon (optional)</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  {form.icon_url ? (
+                    <img src={form.icon_url} alt="Icon" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                      <BookOpen className="text-muted-foreground" size={20} />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="cls-icon"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleIconUpload(e.target.files[0])}
+                    />
+                    <Button type="button" size="sm" variant="outline" disabled={iconUploading} onClick={() => document.getElementById("cls-icon")?.click()}>
+                      {iconUploading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                      {form.icon_url ? "Change icon" : "Upload icon"}
+                    </Button>
+                    {form.icon_url && (
+                      <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => setForm((f) => ({ ...f, icon_url: "" }))}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
               <div><Label>Classroom Name *</Label><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Web Development 101" className="mt-1" /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Describe what students will learn..." className="mt-1" rows={3} /></div>
               <div><Label>Max Students</Label><Input type="number" value={form.max_students} onChange={(e) => setForm((f) => ({ ...f, max_students: parseInt(e.target.value) || 50 }))} className="mt-1" /></div>
