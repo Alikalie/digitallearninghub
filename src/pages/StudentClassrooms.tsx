@@ -23,6 +23,7 @@ interface ClassroomWithMeta {
   classroom_code: string;
   description: string | null;
   is_active: boolean;
+  icon_url?: string | null;
   member_count?: number;
   tutor_name?: string;
   is_joined?: boolean;
@@ -190,10 +191,21 @@ export default function StudentClassrooms() {
               <div className="grid sm:grid-cols-2 gap-4">
                 {myClassrooms.map((room, i) => (
                   <motion.div key={room.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow border-blue-100" onClick={() => navigate(`/classroom/${room.id}`)}>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow border-blue-100 overflow-hidden" onClick={() => navigate(`/classroom/${room.id}`)}>
                       <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-blue-25 rounded-t-lg">
-                        <CardTitle className="text-base text-blue-900">{room.name}</CardTitle>
-                        {room.description && <p className="text-sm text-blue-700/70 line-clamp-2">{room.description}</p>}
+                        <div className="flex items-start gap-3">
+                          {room.icon_url ? (
+                            <img src={room.icon_url} alt={room.name} className="w-11 h-11 rounded-lg object-cover border border-blue-200 flex-shrink-0" />
+                          ) : (
+                            <div className="w-11 h-11 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <BookOpen className="text-blue-600" size={18} />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-base text-blue-900 line-clamp-1">{room.name}</CardTitle>
+                            {room.description && <p className="text-sm text-blue-700/70 line-clamp-2">{room.description}</p>}
+                          </div>
+                        </div>
                       </CardHeader>
                       <CardContent className="pt-3">
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -221,11 +233,22 @@ export default function StudentClassrooms() {
                   <motion.div key={room.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                     <Card className="border-blue-100">
                       <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <CardTitle className="text-base">{room.name}</CardTitle>
-                          <Badge variant="outline" className="text-xs border-blue-200 text-blue-600">Open</Badge>
+                        <div className="flex items-start gap-3">
+                          {room.icon_url ? (
+                            <img src={room.icon_url} alt={room.name} className="w-11 h-11 rounded-lg object-cover border border-blue-200 flex-shrink-0" />
+                          ) : (
+                            <div className="w-11 h-11 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <BookOpen className="text-blue-600" size={18} />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <CardTitle className="text-base line-clamp-1">{room.name}</CardTitle>
+                              <Badge variant="outline" className="text-xs border-blue-200 text-blue-600 flex-shrink-0">Open</Badge>
+                            </div>
+                            {room.description && <p className="text-sm text-muted-foreground line-clamp-2">{room.description}</p>}
+                          </div>
                         </div>
-                        {room.description && <p className="text-sm text-muted-foreground line-clamp-2">{room.description}</p>}
                       </CardHeader>
                       <CardContent className="pt-0">
                         <div className="flex items-center justify-between">

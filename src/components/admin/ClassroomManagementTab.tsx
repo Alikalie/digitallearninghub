@@ -32,6 +32,7 @@ interface Classroom {
   description: string | null;
   is_active: boolean;
   created_at: string;
+  icon_url: string | null;
   tutor_name?: string;
   member_count?: number;
 }
@@ -55,8 +56,9 @@ export function ClassroomManagementTab() {
   const [viewApp, setViewApp] = useState<TutorApp | null>(null);
   const [tab, setTab] = useState<"applications" | "classrooms" | "edit-requests">("applications");
   const [showCreateClassroom, setShowCreateClassroom] = useState(false);
-  const [classroomForm, setClassroomForm] = useState({ name: "", description: "" });
+  const [classroomForm, setClassroomForm] = useState({ name: "", description: "", icon_url: "" });
   const [creatingClassroom, setCreatingClassroom] = useState(false);
+  const [iconUploading, setIconUploading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -145,6 +147,26 @@ export function ClassroomManagementTab() {
     loadData();
   };
 
+  const uploadIcon = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please pick an image"); return; }
+    if (file.size > 3 * 1024 * 1024) { toast.error("Image must be under 3MB"); return; }
+    setIconUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("classroom-icons").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("classroom-icons").getPublicUrl(path);
+      setClassroomForm((f) => ({ ...f, icon_url: data.publicUrl }));
+      toast.success("Icon uploaded");
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setIconUploading(false);
+    }
+  };
+
   const createDefaultClassroom = async () => {
     if (!classroomForm.name.trim()) { toast.error("Name is required"); return; }
     if (!user) return;
@@ -152,6 +174,7 @@ export function ClassroomManagementTab() {
     const { error } = await supabase.from("classrooms").insert({
       name: classroomForm.name.trim(),
       description: classroomForm.description.trim() || null,
+      icon_url: classroomForm.icon_url || null,
       tutor_id: user.id,
       is_active: true,
     });
@@ -160,7 +183,7 @@ export function ClassroomManagementTab() {
     } else {
       toast.success("Default classroom created!");
       setShowCreateClassroom(false);
-      setClassroomForm({ name: "", description: "" });
+      setClassroomForm({ name: "", description: "", icon_url: "" });
       loadData();
     }
     setCreatingClassroom(false);
@@ -381,6 +404,27 @@ export function ClassroomManagementTab() {
             <DialogTitle>Create Default Classroom</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label>Classroom Icon (optional)</Label>
+              <div className="mt-2 flex items-center gap-3">
+                {classroomForm.icon_url ? (
+                  <img src={classroomForm.icon_url} alt="Icon" className="w-14 h-14 rounded-lg object-cover border border-border" />
+                ) : (
+                  <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-xs">No icon</div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="admin-cls-icon"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && uploadIcon(e.target.files[0])}
+                />
+                <Button type="button" size="sm" variant="outline" disabled={iconUploading} onClick={() => document.getElementById("admin-cls-icon")?.click()}>
+                  {iconUploading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                  {classroomForm.icon_url ? "Change" : "Upload"}
+                </Button>
+              </div>
+            </div>
             <div>
               <Label>Classroom Name *</Label>
               <Input value={classroomForm.name} onChange={(e) => setClassroomForm(f => ({ ...f, name: e.target.value }))} className="mt-1" placeholder="e.g. Web Development 101" />

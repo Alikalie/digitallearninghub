@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Users, Copy, Send, Loader2, FileText, ClipboardList, Smile, Plus, Trash2,
+  ArrowLeft, Users, Copy, Send, Loader2, FileText, ClipboardList, Smile, Plus, Trash2, Pencil, BookOpen,
 } from "lucide-react";
 
 interface Classroom {
@@ -29,6 +29,7 @@ interface Classroom {
   description: string | null;
   tutor_id: string;
   is_active: boolean;
+  icon_url: string | null;
 }
 
 interface Post {
@@ -65,6 +66,64 @@ export default function ClassroomView() {
   const [submissionDialog, setSubmissionDialog] = useState<string | null>(null);
   const [submissionText, setSubmissionText] = useState("");
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", description: "", icon_url: "" });
+  const [editIconUploading, setEditIconUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_roles").select("role").eq("user_id", user.id).then(({ data }) => {
+      setIsAdmin((data || []).some((r) => r.role === "admin" || r.role === "super_admin"));
+    });
+  }, [user]);
+
+  const canEditClassroom = isTutor || isAdmin;
+
+  const openEdit = () => {
+    if (!classroom) return;
+    setEditForm({
+      name: classroom.name,
+      description: classroom.description || "",
+      icon_url: classroom.icon_url || "",
+    });
+    setEditOpen(true);
+  };
+
+  const uploadEditIcon = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image"); return; }
+    if (file.size > 3 * 1024 * 1024) { toast.error("Image must be under 3MB"); return; }
+    setEditIconUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user!.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("classroom-icons").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("classroom-icons").getPublicUrl(path);
+      setEditForm((f) => ({ ...f, icon_url: data.publicUrl }));
+      toast.success("Icon uploaded");
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setEditIconUploading(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editForm.name.trim()) { toast.error("Name is required"); return; }
+    const { error } = await supabase
+      .from("classrooms")
+      .update({
+        name: editForm.name.trim(),
+        description: editForm.description.trim() || null,
+        icon_url: editForm.icon_url || null,
+      })
+      .eq("id", classroomId!);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success("Classroom updated");
+    setEditOpen(false);
+    loadAll();
+  };
 
   useEffect(() => {
     if (user && classroomId) loadAll();
@@ -262,9 +321,23 @@ export default function ClassroomView() {
           <Button variant="ghost" size="icon" onClick={() => navigate(isTutor ? "/tutor" : "/classrooms")}>
             <ArrowLeft size={20} />
           </Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">{classroom.name}</h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          {classroom.icon_url ? (
+            <img src={classroom.icon_url} alt={classroom.name} className="w-12 h-12 rounded-lg object-cover border border-border flex-shrink-0" />
+          ) : (
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <BookOpen className="text-primary" size={20} />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold truncate">{classroom.name}</h1>
+              {canEditClassroom && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openEdit} title="Edit classroom">
+                  <Pencil size={14} />
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
               <button onClick={() => { navigator.clipboard.writeText(classroom.classroom_code); toast.success("Code copied!"); }} className="flex items-center gap-1 hover:text-primary">
                 <Copy size={12} /> Code: <span className="font-mono">{classroom.classroom_code}</span>
               </button>
@@ -439,6 +512,57 @@ export default function ClassroomView() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setSubmissionDialog(null)}>Cancel</Button>
               <Button onClick={() => submitAssignment(submissionDialog!)} className="bg-gradient-primary">Submit</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Classroom Dialog (tutor or admin) */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Edit Classroom</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Icon</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  {editForm.icon_url ? (
+                    <img src={editForm.icon_url} alt="Icon" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                      <BookOpen className="text-muted-foreground" size={20} />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="edit-cls-icon"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && uploadEditIcon(e.target.files[0])}
+                    />
+                    <Button type="button" size="sm" variant="outline" disabled={editIconUploading} onClick={() => document.getElementById("edit-cls-icon")?.click()}>
+                      {editIconUploading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                      {editForm.icon_url ? "Change icon" : "Upload icon"}
+                    </Button>
+                    {editForm.icon_url && (
+                      <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => setEditForm((f) => ({ ...f, icon_url: "" }))}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <Label>Classroom Name *</Label>
+                <Input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className="mt-1" />
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Textarea value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} className="mt-1" rows={3} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+              <Button onClick={saveEdit} className="bg-gradient-primary">Save changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
