@@ -433,6 +433,8 @@ export default function ClassroomView() {
                     </Button>
                   )}
                 </div>
+
+                <PostComments postId={post.id} currentUserId={user!.id} canModerate={isTutor || isAdmin} />
               </motion.div>
             ))}
           </TabsContent>
