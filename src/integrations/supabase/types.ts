@@ -207,6 +207,7 @@ export type Database = {
           classroom_code: string
           created_at: string
           description: string | null
+          icon_url: string | null
           id: string
           is_active: boolean | null
           max_students: number | null
@@ -218,6 +219,7 @@ export type Database = {
           classroom_code?: string
           created_at?: string
           description?: string | null
+          icon_url?: string | null
           id?: string
           is_active?: boolean | null
           max_students?: number | null
@@ -229,6 +231,7 @@ export type Database = {
           classroom_code?: string
           created_at?: string
           description?: string | null
+          icon_url?: string | null
           id?: string
           is_active?: boolean | null
           max_students?: number | null
