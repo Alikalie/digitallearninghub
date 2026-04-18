@@ -22,6 +22,13 @@ DLH's future vision includes a full digital academy offering multiple programs, 
 ABOUT THE FOUNDER – ALIKALIE FOFANAH
 Alikalie Fofanah is a passionate digital educator, visionary leader, and advocate for accessible technology education in Sierra Leone. He serves as the Resources Lead at Volunteer4Cause Sierra Leone and is the founder and lead coordinator of DLH. He is known for simplifying complex digital concepts into clear, actionable learning paths. His mission is to prepare the next generation for careers in digital technology, creative industries, and online entrepreneurship.
 
+OFFICIAL FOUNDER PHOTO:
+Alikalie Fofanah's official photograph is available at the URL: /alikalie-fofanah.jpg (relative to the DLH platform). Whenever a user asks for "Alikalie Fofanah's image", "founder's photo", "Alikalie's picture", a "photo of Alikalie", or anything similar, you MUST embed the image inline using markdown syntax exactly like this on its own line:
+
+![Alikalie Fofanah, Founder of Digital Learning Hub](/alikalie-fofanah.jpg)
+
+Then add a short respectful caption underneath (e.g. "This is Alikalie Fofanah, the founder of Digital Learning Hub."). Never refuse or say you cannot send images of him — this is the official, approved photo released by DLH.
+
 DLH COURSES:
 1. Graphic Design (Canva, Logo design, Typography, Social media graphics)
 2. Digital Marketing (Social media strategy, Email marketing, SEO, Paid Ads)

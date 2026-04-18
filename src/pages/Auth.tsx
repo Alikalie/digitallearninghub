@@ -170,20 +170,17 @@ export default function Auth() {
               ],
             });
 
-            // Notify all admins (in-app notification)
+            // Notify admins via edge function (in-app + email)
             try {
-              const { data: adminRoles } = await supabase
-                .from("user_roles")
-                .select("user_id")
-                .in("role", ["admin", "super_admin"]);
-              if (adminRoles && adminRoles.length > 0) {
-                const notifs = adminRoles.map((r) => ({
-                  user_id: r.user_id,
-                  title: "New tutor application",
-                  message: `${full_name} (${data.email}) just registered as a tutor and is awaiting approval.`,
-                }));
-                await supabase.from("notifications").insert(notifs);
-              }
+              await supabase.functions.invoke("notify-tutor-application", {
+                body: {
+                  full_name,
+                  email: data.email,
+                  phone: data.phone_number,
+                  country: data.country,
+                  course: data.course_of_interest,
+                },
+              });
             } catch (notifyErr) {
               console.warn("Failed to notify admins:", notifyErr);
             }
