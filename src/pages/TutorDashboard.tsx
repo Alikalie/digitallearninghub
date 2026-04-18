@@ -26,6 +26,7 @@ interface Classroom {
   max_students: number;
   is_active: boolean;
   created_at: string;
+  icon_url: string | null;
   member_count?: number;
 }
 
@@ -52,7 +53,8 @@ export default function TutorDashboard() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
-  const [form, setForm] = useState({ name: "", description: "", max_students: 50 });
+  const [form, setForm] = useState({ name: "", description: "", max_students: 50, icon_url: "" as string });
+  const [iconUploading, setIconUploading] = useState(false);
   const [answers, setAnswers] = useState<string[]>(TUTOR_QUESTIONS.map(() => ""));
   const [submittingApp, setSubmittingApp] = useState(false);
 
@@ -112,12 +114,36 @@ export default function TutorDashboard() {
   const openDialog = (classroom?: Classroom) => {
     if (classroom) {
       setEditingClassroom(classroom);
-      setForm({ name: classroom.name, description: classroom.description || "", max_students: classroom.max_students });
+      setForm({
+        name: classroom.name,
+        description: classroom.description || "",
+        max_students: classroom.max_students,
+        icon_url: classroom.icon_url || "",
+      });
     } else {
       setEditingClassroom(null);
-      setForm({ name: "", description: "", max_students: 50 });
+      setForm({ name: "", description: "", max_students: 50, icon_url: "" });
     }
     setDialogOpen(true);
+  };
+
+  const handleIconUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image"); return; }
+    if (file.size > 3 * 1024 * 1024) { toast.error("Image must be under 3MB"); return; }
+    setIconUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user!.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("classroom-icons").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("classroom-icons").getPublicUrl(path);
+      setForm((f) => ({ ...f, icon_url: data.publicUrl }));
+      toast.success("Icon uploaded");
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setIconUploading(false);
+    }
   };
 
   const saveClassroom = async () => {
@@ -129,14 +155,14 @@ export default function TutorDashboard() {
     if (editingClassroom) {
       const { error } = await supabase
         .from("classrooms")
-        .update({ name: form.name, description: form.description, max_students: form.max_students })
+        .update({ name: form.name, description: form.description, max_students: form.max_students, icon_url: form.icon_url || null })
         .eq("id", editingClassroom.id);
       if (error) { toast.error(error.message.includes("unique") ? "Classroom name already taken" : "Failed to update"); return; }
       toast.success("Classroom updated");
     } else {
       const { error } = await supabase
         .from("classrooms")
-        .insert({ tutor_id: user!.id, name: form.name, description: form.description, max_students: form.max_students });
+        .insert({ tutor_id: user!.id, name: form.name, description: form.description, max_students: form.max_students, icon_url: form.icon_url || null });
       if (error) { toast.error(error.message.includes("unique") ? "A classroom with this code already exists" : "Failed to create"); return; }
       toast.success("Classroom created!");
     }
