@@ -32,6 +32,7 @@ interface Classroom {
   description: string | null;
   is_active: boolean;
   created_at: string;
+  icon_url: string | null;
   tutor_name?: string;
   member_count?: number;
 }
@@ -55,8 +56,9 @@ export function ClassroomManagementTab() {
   const [viewApp, setViewApp] = useState<TutorApp | null>(null);
   const [tab, setTab] = useState<"applications" | "classrooms" | "edit-requests">("applications");
   const [showCreateClassroom, setShowCreateClassroom] = useState(false);
-  const [classroomForm, setClassroomForm] = useState({ name: "", description: "" });
+  const [classroomForm, setClassroomForm] = useState({ name: "", description: "", icon_url: "" });
   const [creatingClassroom, setCreatingClassroom] = useState(false);
+  const [iconUploading, setIconUploading] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -145,6 +147,26 @@ export function ClassroomManagementTab() {
     loadData();
   };
 
+  const uploadIcon = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please pick an image"); return; }
+    if (file.size > 3 * 1024 * 1024) { toast.error("Image must be under 3MB"); return; }
+    setIconUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("classroom-icons").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("classroom-icons").getPublicUrl(path);
+      setClassroomForm((f) => ({ ...f, icon_url: data.publicUrl }));
+      toast.success("Icon uploaded");
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setIconUploading(false);
+    }
+  };
+
   const createDefaultClassroom = async () => {
     if (!classroomForm.name.trim()) { toast.error("Name is required"); return; }
     if (!user) return;
@@ -152,6 +174,7 @@ export function ClassroomManagementTab() {
     const { error } = await supabase.from("classrooms").insert({
       name: classroomForm.name.trim(),
       description: classroomForm.description.trim() || null,
+      icon_url: classroomForm.icon_url || null,
       tutor_id: user.id,
       is_active: true,
     });
@@ -160,7 +183,7 @@ export function ClassroomManagementTab() {
     } else {
       toast.success("Default classroom created!");
       setShowCreateClassroom(false);
-      setClassroomForm({ name: "", description: "" });
+      setClassroomForm({ name: "", description: "", icon_url: "" });
       loadData();
     }
     setCreatingClassroom(false);
