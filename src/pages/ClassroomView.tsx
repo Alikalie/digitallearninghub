@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Users, Copy, Send, Loader2, FileText, ClipboardList, Smile, Plus, Trash2,
+  ArrowLeft, Users, Copy, Send, Loader2, FileText, ClipboardList, Smile, Plus, Trash2, Pencil, BookOpen,
 } from "lucide-react";
 
 interface Classroom {
@@ -29,6 +29,7 @@ interface Classroom {
   description: string | null;
   tutor_id: string;
   is_active: boolean;
+  icon_url: string | null;
 }
 
 interface Post {
@@ -65,6 +66,64 @@ export default function ClassroomView() {
   const [submissionDialog, setSubmissionDialog] = useState<string | null>(null);
   const [submissionText, setSubmissionText] = useState("");
   const [showEmojiFor, setShowEmojiFor] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", description: "", icon_url: "" });
+  const [editIconUploading, setEditIconUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("user_roles").select("role").eq("user_id", user.id).then(({ data }) => {
+      setIsAdmin((data || []).some((r) => r.role === "admin" || r.role === "super_admin"));
+    });
+  }, [user]);
+
+  const canEditClassroom = isTutor || isAdmin;
+
+  const openEdit = () => {
+    if (!classroom) return;
+    setEditForm({
+      name: classroom.name,
+      description: classroom.description || "",
+      icon_url: classroom.icon_url || "",
+    });
+    setEditOpen(true);
+  };
+
+  const uploadEditIcon = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image"); return; }
+    if (file.size > 3 * 1024 * 1024) { toast.error("Image must be under 3MB"); return; }
+    setEditIconUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user!.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("classroom-icons").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("classroom-icons").getPublicUrl(path);
+      setEditForm((f) => ({ ...f, icon_url: data.publicUrl }));
+      toast.success("Icon uploaded");
+    } catch (e: any) {
+      toast.error(e.message || "Upload failed");
+    } finally {
+      setEditIconUploading(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editForm.name.trim()) { toast.error("Name is required"); return; }
+    const { error } = await supabase
+      .from("classrooms")
+      .update({
+        name: editForm.name.trim(),
+        description: editForm.description.trim() || null,
+        icon_url: editForm.icon_url || null,
+      })
+      .eq("id", classroomId!);
+    if (error) { toast.error("Failed to update"); return; }
+    toast.success("Classroom updated");
+    setEditOpen(false);
+    loadAll();
+  };
 
   useEffect(() => {
     if (user && classroomId) loadAll();
