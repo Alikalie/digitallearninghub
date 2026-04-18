@@ -515,6 +515,57 @@ export default function ClassroomView() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Classroom Dialog (tutor or admin) */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Edit Classroom</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Icon</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  {editForm.icon_url ? (
+                    <img src={editForm.icon_url} alt="Icon" className="w-16 h-16 rounded-lg object-cover border border-border" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                      <BookOpen className="text-muted-foreground" size={20} />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="edit-cls-icon"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && uploadEditIcon(e.target.files[0])}
+                    />
+                    <Button type="button" size="sm" variant="outline" disabled={editIconUploading} onClick={() => document.getElementById("edit-cls-icon")?.click()}>
+                      {editIconUploading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                      {editForm.icon_url ? "Change icon" : "Upload icon"}
+                    </Button>
+                    {editForm.icon_url && (
+                      <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => setEditForm((f) => ({ ...f, icon_url: "" }))}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <Label>Classroom Name *</Label>
+                <Input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className="mt-1" />
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Textarea value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} className="mt-1" rows={3} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+              <Button onClick={saveEdit} className="bg-gradient-primary">Save changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
