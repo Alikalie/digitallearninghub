@@ -23,6 +23,7 @@ import FAQ from "./pages/FAQ";
 import TutorDashboard from "./pages/TutorDashboard";
 import StudentClassrooms from "./pages/StudentClassrooms";
 import ClassroomView from "./pages/ClassroomView";
+import Premium from "./pages/Premium";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/tutor" element={<ProtectedRoute><TutorDashboard /></ProtectedRoute>} />
             <Route path="/classrooms" element={<ProtectedRoute><StudentClassrooms /></ProtectedRoute>} />
             <Route path="/classroom/:classroomId" element={<ProtectedRoute><ClassroomView /></ProtectedRoute>} />
+            <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
