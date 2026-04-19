@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload, Download, Trash2, FileText, Loader2, Eye } from "lucide-react";
+import FilePreview from "./FilePreview";
 
 interface FileRow {
   id: string;
@@ -139,7 +140,7 @@ export default function ClassroomFiles({ postId, classroomId, isTutor, isMember,
         <div className="space-y-1.5">
           {files.map((f) => (
             <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg border border-border bg-card">
-              <FileText className="text-primary flex-shrink-0" size={16} />
+              <FilePreview filePath={f.file_path} fileName={f.file_name} mimeType={f.mime_type} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{f.file_name}</p>
                 <p className="text-[10px] text-muted-foreground">
