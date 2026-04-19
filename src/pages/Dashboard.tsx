@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { TutorRequestButton } from "@/components/TutorRequestButton";
 import { motion } from "framer-motion";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -237,6 +238,9 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+
+        {/* Tutor request CTA */}
+        <TutorRequestButton />
 
         {/* Recent activity */}
         <div className="grid lg:grid-cols-2 gap-6">
