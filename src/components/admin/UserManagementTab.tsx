@@ -19,7 +19,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Eye, EyeOff, Shield, Pencil, Trash2, BookOpen } from "lucide-react";
+import { Search, Eye, EyeOff, Shield, Pencil, Trash2, BookOpen, Crown } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -35,6 +35,7 @@ interface Profile {
   country: string | null;
   gender: string | null;
   avatar_url: string | null;
+  is_premium?: boolean | null;
 }
 
 interface UserRole {
@@ -101,6 +102,20 @@ export function UserManagementTab({ users, onRefresh }: Props) {
     const { error } = await supabase.from("profiles").update({ is_verified: !profile.is_verified }).eq("id", profile.id);
     if (error) { toast.error("Failed to update user"); return; }
     toast.success(profile.is_verified ? "Verification removed" : "User verified");
+    onRefresh();
+  };
+
+  const togglePremium = async (profile: Profile) => {
+    if (!isSuperAdmin) { toast.error("Only Super Admins can change premium status"); return; }
+    const next = !profile.is_premium;
+    const { error } = await supabase.from("profiles").update({ is_premium: next }).eq("id", profile.id);
+    if (error) { toast.error("Failed to update premium"); return; }
+    await supabase.from("notifications").insert({
+      user_id: profile.user_id,
+      title: next ? "🎉 You're now Premium!" : "Premium status removed",
+      message: next ? "Unlimited classrooms unlocked." : "You're back to the free tier (3 classrooms max).",
+    });
+    toast.success(next ? "Granted premium" : "Premium revoked");
     onRefresh();
   };
 
@@ -232,6 +247,11 @@ export function UserManagementTab({ users, onRefresh }: Props) {
                       <Shield size={14} />
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => openEditDialog(u)} title="Edit user"><Pencil size={14} /></Button>
+                    {isSuperAdmin && (
+                      <Button size="sm" variant="ghost" onClick={() => togglePremium(u)} className={u.is_premium ? "text-amber-500" : ""} title={u.is_premium ? "Revoke premium" : "Grant premium"}>
+                        <Crown size={14} />
+                      </Button>
+                    )}
                     <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setDeleteUserId(u.id)} title="Delete user"><Trash2 size={14} /></Button>
                     <Select onValueChange={(val) => changeUserRole(u.user_id, val)}>
                       <SelectTrigger className="h-8 w-[100px] text-xs"><SelectValue placeholder="Role" /></SelectTrigger>

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload, Mail, HelpCircle, Bell, Video, GraduationCap,
+  Users, BookOpen, Plus, Pencil, Trash2, Shield, Loader2, Bot, Settings2, Upload, Mail, HelpCircle, Bell, Video, GraduationCap, Crown,
 } from "lucide-react";
 import { DLH_COURSES, COURSE_CATEGORIES } from "@/lib/courses";
 import { BotKnowledgeTab } from "@/components/admin/BotKnowledgeTab";
@@ -31,6 +31,7 @@ import { FAQManagementTab } from "@/components/admin/FAQManagementTab";
 import { NotificationSenderTab } from "@/components/admin/NotificationSenderTab";
 import { CourseVideoTab } from "@/components/admin/CourseVideoTab";
 import { ClassroomManagementTab } from "@/components/admin/ClassroomManagementTab";
+import { PremiumSettingsTab } from "@/components/admin/PremiumSettingsTab";
 
 interface Profile {
   id: string;
@@ -182,6 +183,7 @@ export default function Admin() {
             <TabsTrigger value="notifications" className="gap-2"><Bell size={16} />Notify</TabsTrigger>
             <TabsTrigger value="videos" className="gap-2"><Video size={16} />Videos</TabsTrigger>
             <TabsTrigger value="classrooms" className="gap-2"><GraduationCap size={16} />Classrooms</TabsTrigger>
+            <TabsTrigger value="premium" className="gap-2"><Crown size={16} />Premium</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
@@ -260,6 +262,10 @@ export default function Admin() {
 
           <TabsContent value="classrooms">
             <ClassroomManagementTab />
+          </TabsContent>
+
+          <TabsContent value="premium">
+            <PremiumSettingsTab />
           </TabsContent>
         </Tabs>
 

@@ -44,6 +44,7 @@ const TUTOR_QUESTIONS = [
 ];
 
 const MAX_FREE_CLASSROOMS = 3;
+const PREMIUM_LIMIT = 999;
 
 export default function TutorDashboard() {
   const { user, profile } = useAuth();
@@ -146,10 +147,14 @@ export default function TutorDashboard() {
     }
   };
 
+  const isPremium = (profile as any)?.is_premium;
+  const limit = isPremium ? PREMIUM_LIMIT : MAX_FREE_CLASSROOMS;
+
   const saveClassroom = async () => {
     if (!form.name.trim()) { toast.error("Classroom name is required"); return; }
-    if (!editingClassroom && classrooms.length >= MAX_FREE_CLASSROOMS) {
-      toast.error(`You can only create ${MAX_FREE_CLASSROOMS} classrooms for free. Contact admin for more.`);
+    if (!editingClassroom && classrooms.length >= limit) {
+      toast.error(`Free tier allows ${MAX_FREE_CLASSROOMS} classrooms. Upgrade to Premium for unlimited.`);
+      navigate("/premium");
       return;
     }
     if (editingClassroom) {
@@ -284,26 +289,29 @@ export default function TutorDashboard() {
                 <CheckCircle size={24} /> Tutor Dashboard
               </h1>
               <p className="text-primary-foreground/80 text-sm mt-1">
-                {classrooms.length}/{MAX_FREE_CLASSROOMS} free classrooms used
+                {isPremium ? <>👑 Premium · {classrooms.length} classrooms</> : <>{classrooms.length}/{MAX_FREE_CLASSROOMS} free classrooms used</>}
               </p>
             </div>
             <Button
               onClick={() => openDialog()}
               variant="secondary"
               className="bg-white text-primary hover:bg-white/90"
-              disabled={classrooms.length >= MAX_FREE_CLASSROOMS}
+              disabled={!isPremium && classrooms.length >= MAX_FREE_CLASSROOMS}
             >
               <Plus className="mr-2 h-4 w-4" /> Create Classroom
             </Button>
           </div>
         </motion.div>
 
-        {classrooms.length >= MAX_FREE_CLASSROOMS && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm">
-            <p className="font-medium text-amber-800 dark:text-amber-200">Classroom limit reached</p>
-            <p className="text-amber-700 dark:text-amber-300 mt-1">
-              You've used all {MAX_FREE_CLASSROOMS} free classrooms. Contact admin to request more.
-            </p>
+        {!isPremium && classrooms.length >= MAX_FREE_CLASSROOMS && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">Classroom limit reached</p>
+              <p className="text-amber-700 dark:text-amber-300 mt-1">
+                Upgrade to Premium for unlimited classrooms.
+              </p>
+            </div>
+            <Button size="sm" onClick={() => navigate("/premium")} className="bg-gradient-primary">Upgrade</Button>
           </div>
         )}
 

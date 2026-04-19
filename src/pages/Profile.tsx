@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Mail, Phone, MapPin, BookOpen, User as UserIcon, GraduationCap, BadgeCheck } from "lucide-react";
 import { DLH_COURSES } from "@/lib/courses";
+import { TutorRequestButton } from "@/components/TutorRequestButton";
 
 interface Notification {
   id: string;
@@ -402,6 +403,9 @@ export default function Profile() {
             </div>
           </div>
         </motion.div>
+
+        {/* Become a tutor CTA */}
+        <TutorRequestButton />
 
         {/* Editable Personal Info */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="dlh-card p-5">
