@@ -132,6 +132,89 @@ export type Database = {
         }
         Relationships: []
       }
+      classroom_file_downloads: {
+        Row: {
+          downloaded_at: string
+          file_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          downloaded_at?: string
+          file_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          downloaded_at?: string
+          file_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classroom_file_downloads_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "classroom_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classroom_files: {
+        Row: {
+          classroom_id: string
+          created_at: string
+          download_count: number
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string | null
+          post_id: string
+          uploader_id: string
+        }
+        Insert: {
+          classroom_id: string
+          created_at?: string
+          download_count?: number
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          post_id: string
+          uploader_id: string
+        }
+        Update: {
+          classroom_id?: string
+          created_at?: string
+          download_count?: number
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          post_id?: string
+          uploader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classroom_files_classroom_id_fkey"
+            columns: ["classroom_id"]
+            isOneToOne: false
+            referencedRelation: "classrooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classroom_files_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "classroom_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classroom_members: {
         Row: {
           classroom_id: string
@@ -459,6 +542,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          edited_at: string | null
           id: string
           parent_comment_id: string | null
           post_id: string
@@ -468,6 +552,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           parent_comment_id?: string | null
           post_id: string
@@ -477,6 +562,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           parent_comment_id?: string | null
           post_id?: string
@@ -573,6 +659,7 @@ export type Database = {
           full_name: string
           gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
+          is_premium: boolean
           is_profile_locked: boolean | null
           is_suspended: boolean | null
           is_verified: boolean | null
@@ -591,6 +678,7 @@ export type Database = {
           full_name: string
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
+          is_premium?: boolean
           is_profile_locked?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
@@ -609,6 +697,7 @@ export type Database = {
           full_name?: string
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
+          is_premium?: boolean
           is_profile_locked?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
@@ -678,6 +767,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_file_download: {
+        Args: { _file_id: string }
+        Returns: undefined
       }
     }
     Enums: {
