@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import PostComments, { UserAvatar } from "@/components/classroom/PostComments";
+import ClassroomFiles from "@/components/classroom/ClassroomFiles";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -434,7 +435,17 @@ export default function ClassroomView() {
                   )}
                 </div>
 
-                <PostComments postId={post.id} currentUserId={user!.id} canModerate={isTutor || isAdmin} />
+                {(post.post_type === "material" || isTutor) && (
+                  <ClassroomFiles
+                    postId={post.id}
+                    classroomId={classroomId!}
+                    isTutor={isTutor}
+                    isMember={isMember}
+                    currentUserId={user!.id}
+                  />
+                )}
+
+                <PostComments postId={post.id} classroomId={classroomId!} currentUserId={user!.id} canModerate={isTutor || isAdmin} />
               </motion.div>
             ))}
           </TabsContent>

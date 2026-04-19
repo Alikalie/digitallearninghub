@@ -11,7 +11,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 export default function Premium() {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const settings = useSiteSettings();
+  const { settings } = useSiteSettings();
   const [premiumInfo, setPremiumInfo] = useState({
     title: "Go Premium — Unlock Unlimited Classrooms",
     subtitle: "Upgrade to host more than 3 classrooms and access advanced tutor features.",
@@ -34,8 +34,8 @@ export default function Premium() {
   }, []);
 
   const isPremium = (profile as any)?.is_premium;
-  const whatsapp = settings.contact_whatsapp;
-  const email = settings.contact_email;
+  const whatsapp = settings?.contact_whatsapp;
+  const email = settings?.contact_email;
 
   return (
     <DashboardLayout>
