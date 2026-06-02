@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
-  Loader2, Save, Camera, Bell, Shield, ChevronDown, ChevronUp, Lock, Send, CheckCircle, Clock,
+  Loader2, Save, Camera, Bell, Shield, ChevronDown, ChevronUp, Lock, Send, CheckCircle, Clock, Check, Linkedin, Twitter, Star,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -52,6 +52,8 @@ export default function Profile() {
   const [editRequestReason, setEditRequestReason] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
   const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [stats, setStats] = useState({ enrolled: 0, completed: 0, rating: 4.8 });
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -60,6 +62,8 @@ export default function Profile() {
     country: "",
     bio: "",
     course_of_interest: "",
+    linkedin_url: "",
+    twitter_url: "",
   });
 
   useEffect(() => {
@@ -72,6 +76,8 @@ export default function Profile() {
         country: profile.country || "",
         bio: profile.bio || "",
         course_of_interest: profile.course_of_interest || "",
+        linkedin_url: (profile as any).linkedin_url || "",
+        twitter_url: (profile as any).twitter_url || "",
       });
 
       // Check if profile is incomplete (missing key fields)
@@ -82,6 +88,20 @@ export default function Profile() {
       checkProfileLock();
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      // Load real learning stats
+      const { data: progressData } = await supabase
+        .from("course_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id);
+      const completed = (progressData || []).filter((p) => p.completed).length;
+      const enrolled = new Set((progressData || []).map((p) => p.lesson_id)).size;
+      setStats((s) => ({ ...s, enrolled: enrolled || 0, completed }));
+    })();
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -170,13 +190,17 @@ export default function Profile() {
           country: formData.country,
           bio: formData.bio,
           course_of_interest: formData.course_of_interest,
+          linkedin_url: formData.linkedin_url || null,
+          twitter_url: formData.twitter_url || null,
           is_profile_locked: true, // Lock after first save
-        })
+        } as any)
         .eq("id", profile.id);
       if (error) throw error;
       await refreshProfile();
       setIsProfileLocked(true);
       setIsProfileIncomplete(false);
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 2500);
       toast.success("Profile saved successfully! Your profile is now locked.");
     } catch (error: any) {
       toast.error(error.message || "Failed to update profile");
@@ -254,7 +278,7 @@ export default function Profile() {
     <DashboardLayout>
       <div className="p-4 lg:p-6 max-w-2xl mx-auto space-y-6 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-bold mb-1">My Profile</h1>
+          <h1 className="font-display text-3xl mb-1">My Profile</h1>
           <p className="text-muted-foreground text-sm">Manage your account and preferences</p>
         </motion.div>
 
@@ -300,7 +324,9 @@ export default function Profile() {
               <div className="relative">
                 <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-2xl font-display">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
                   onChange={async (e) => {
@@ -319,7 +345,7 @@ export default function Profile() {
               </div>
               <div className="flex-1 min-w-0 sm:pb-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-bold text-xl truncate">{profile?.full_name || "Set up your profile"}</h2>
+                  <h2 className="font-display text-2xl truncate">{profile?.full_name || "Set up your profile"}</h2>
                   {profile?.is_verified && (
                     <BadgeCheck className="text-primary flex-shrink-0" size={18} />
                   )}
@@ -404,6 +430,21 @@ export default function Profile() {
           </div>
         </motion.div>
 
+        {/* Stats row */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }} className="grid grid-cols-3 gap-3">
+          {[
+            { icon: <BookOpen size={18} className="text-primary" />, label: "Enrolled", value: stats.enrolled },
+            { icon: <CheckCircle size={18} className="text-emerald-500" />, label: "Completed", value: stats.completed },
+            { icon: <Star size={18} className="text-amber-500" fill="currentColor" />, label: "Rating", value: stats.rating },
+          ].map((s) => (
+            <div key={s.label} className="dlh-card p-4 flex flex-col gap-1.5">
+              <span>{s.icon}</span>
+              <span className="font-display text-xl leading-none">{s.value}</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</span>
+            </div>
+          ))}
+        </motion.div>
+
         {/* Become a tutor CTA */}
         <TutorRequestButton />
 
@@ -455,11 +496,63 @@ export default function Profile() {
               <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about yourself..." className="mt-1" rows={3} disabled={!canEdit} />
             </div>
           </div>
+
+          {/* Social Links */}
+          <div className="mt-6 pt-5 border-t border-border">
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-primary rounded-full" /> Social Links
+            </h4>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="linkedin_url" className="text-xs flex items-center gap-1.5">
+                  <Linkedin size={12} className="text-[#0a66c2]" /> LinkedIn
+                </Label>
+                <Input
+                  id="linkedin_url"
+                  name="linkedin_url"
+                  value={formData.linkedin_url}
+                  onChange={handleInputChange}
+                  placeholder="https://linkedin.com/in/username"
+                  className="mt-1"
+                  disabled={!canEdit}
+                />
+              </div>
+              <div>
+                <Label htmlFor="twitter_url" className="text-xs flex items-center gap-1.5">
+                  <Twitter size={12} className="text-[#1da1f2]" /> Twitter / X
+                </Label>
+                <Input
+                  id="twitter_url"
+                  name="twitter_url"
+                  value={formData.twitter_url}
+                  onChange={handleInputChange}
+                  placeholder="https://twitter.com/username"
+                  className="mt-1"
+                  disabled={!canEdit}
+                />
+              </div>
+            </div>
+          </div>
+
           {canEdit && (
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleSaveProfile} disabled={loading} className="bg-gradient-primary hover:opacity-90">
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isProfileLocked ? "Save Changes" : "Save & Lock Profile"}
+            <div className="mt-5 flex justify-end">
+              <Button
+                onClick={handleSaveProfile}
+                disabled={loading}
+                className={`transition-all duration-300 ${
+                  savedFlash
+                    ? "bg-emerald-500 hover:bg-emerald-500 text-white"
+                    : "bg-gradient-primary hover:opacity-90"
+                }`}
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : savedFlash ? (
+                  <Check className="mr-2 h-4 w-4" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {savedFlash ? "Saved!" : isProfileLocked ? "Save Changes" : "Save & Lock Profile"}
               </Button>
             </div>
           )}

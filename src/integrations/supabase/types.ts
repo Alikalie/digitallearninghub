@@ -663,7 +663,9 @@ export type Database = {
           is_profile_locked: boolean | null
           is_suspended: boolean | null
           is_verified: boolean | null
+          linkedin_url: string | null
           phone_number: string | null
+          twitter_url: string | null
           updated_at: string
           user_id: string
           user_type: string | null
@@ -682,7 +684,9 @@ export type Database = {
           is_profile_locked?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
+          linkedin_url?: string | null
           phone_number?: string | null
+          twitter_url?: string | null
           updated_at?: string
           user_id: string
           user_type?: string | null
@@ -701,7 +705,9 @@ export type Database = {
           is_profile_locked?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
+          linkedin_url?: string | null
           phone_number?: string | null
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string
           user_type?: string | null

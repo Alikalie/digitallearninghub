@@ -172,13 +172,41 @@ export default function CourseDetail() {
           <p className="text-muted-foreground mb-8">{course.description}</p>
 
           {lessons.length > 0 && (
-            <div className="bg-card rounded-2xl border border-border p-4 mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Your Progress</span>
-                <span className="text-sm text-muted-foreground">{completedLessons.size}/{lessons.length} lessons</span>
+            <div className="bg-gradient-to-br from-primary to-accent rounded-2xl p-5 mb-6 text-primary-foreground shadow-lg">
+              <div className="text-[11px] font-bold uppercase tracking-widest opacity-80 mb-1">Your Course Progress</div>
+              <div className="flex items-center gap-4">
+                {/* Circular ring */}
+                <div className="relative w-16 h-16 flex-shrink-0">
+                  <svg width="64" height="64" className="-rotate-90">
+                    <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="5" />
+                    <circle
+                      cx="32"
+                      cy="32"
+                      r="27"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 27}
+                      strokeDashoffset={2 * Math.PI * 27 - (progressPercent / 100) * 2 * Math.PI * 27}
+                      style={{ transition: "stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)" }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                    {progressPercent}%
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display text-2xl leading-none mb-1">{completedLessons.size} / {lessons.length}</div>
+                  <div className="text-xs opacity-80 mb-2">lessons completed</div>
+                  <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
+                    <div
+                      className="h-full bg-white rounded-full transition-all duration-700"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-              <Progress value={progressPercent} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-1">{progressPercent}% complete</p>
             </div>
           )}
 
@@ -207,22 +235,33 @@ export default function CourseDetail() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="dlh-card p-4 space-y-3"
+                    className={`dlh-card p-4 space-y-3 transition-all ${isCompleted ? "border-emerald-500/40 ring-1 ring-emerald-500/20" : ""}`}
                   >
                     <div className="flex items-start gap-3">
-                      <Checkbox
-                        checked={isCompleted}
-                        onCheckedChange={() => toggleLessonComplete(lesson.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <h3 className={`font-medium ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
-                          {i + 1}. {lesson.title}
+                      <button
+                        onClick={() => toggleLessonComplete(lesson.id)}
+                        className={`mt-0.5 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                          isCompleted
+                            ? "bg-emerald-500 text-white shadow-md"
+                            : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
+                        }`}
+                        aria-label={isCompleted ? "Mark incomplete" : "Mark complete"}
+                      >
+                        {isCompleted ? <CheckCircle size={16} /> : <span className="text-[11px] font-bold">{i + 1}</span>}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`font-semibold ${isCompleted ? "text-muted-foreground" : ""}`}>
+                          {lesson.title}
                         </h3>
                         {lesson.content && (
                           <p className="text-sm text-muted-foreground mt-1">{lesson.content}</p>
                         )}
                       </div>
+                      {isCompleted && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-full">
+                          Completed
+                        </span>
+                      )}
                     </div>
 
                     {videosEnabled && lesson.video_url && (
