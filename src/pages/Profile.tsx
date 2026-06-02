@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import {
-  Loader2, Save, Camera, Bell, Shield, ChevronDown, ChevronUp, Lock, Send, CheckCircle, Clock,
+  Loader2, Save, Camera, Bell, Shield, ChevronDown, ChevronUp, Lock, Send, CheckCircle, Clock, Check, Linkedin, Twitter, Star,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -52,6 +52,8 @@ export default function Profile() {
   const [editRequestReason, setEditRequestReason] = useState("");
   const [sendingRequest, setSendingRequest] = useState(false);
   const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const [stats, setStats] = useState({ enrolled: 0, completed: 0, rating: 4.8 });
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -60,6 +62,8 @@ export default function Profile() {
     country: "",
     bio: "",
     course_of_interest: "",
+    linkedin_url: "",
+    twitter_url: "",
   });
 
   useEffect(() => {
@@ -72,6 +76,8 @@ export default function Profile() {
         country: profile.country || "",
         bio: profile.bio || "",
         course_of_interest: profile.course_of_interest || "",
+        linkedin_url: (profile as any).linkedin_url || "",
+        twitter_url: (profile as any).twitter_url || "",
       });
 
       // Check if profile is incomplete (missing key fields)
@@ -82,6 +88,20 @@ export default function Profile() {
       checkProfileLock();
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      // Load real learning stats
+      const { data: progressData } = await supabase
+        .from("course_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id);
+      const completed = (progressData || []).filter((p) => p.completed).length;
+      const enrolled = new Set((progressData || []).map((p) => p.lesson_id)).size;
+      setStats((s) => ({ ...s, enrolled: enrolled || 0, completed }));
+    })();
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -170,13 +190,17 @@ export default function Profile() {
           country: formData.country,
           bio: formData.bio,
           course_of_interest: formData.course_of_interest,
+          linkedin_url: formData.linkedin_url || null,
+          twitter_url: formData.twitter_url || null,
           is_profile_locked: true, // Lock after first save
-        })
+        } as any)
         .eq("id", profile.id);
       if (error) throw error;
       await refreshProfile();
       setIsProfileLocked(true);
       setIsProfileIncomplete(false);
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 2500);
       toast.success("Profile saved successfully! Your profile is now locked.");
     } catch (error: any) {
       toast.error(error.message || "Failed to update profile");
