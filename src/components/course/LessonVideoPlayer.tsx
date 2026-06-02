@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, FileText, ChevronDown, ChevronUp, Play, Pause } from "lucide-react";
 
 interface LessonVideoPlayerProps {
   lessonId: string;
@@ -12,21 +12,18 @@ interface LessonVideoPlayerProps {
   onAutoComplete: (lessonId: string) => void;
 }
 
-function getYouTubeEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    let videoId = "";
-    if (u.hostname.includes("youtube.com")) {
-      videoId = u.searchParams.get("v") || "";
-    } else if (u.hostname.includes("youtu.be")) {
-      videoId = u.pathname.slice(1);
-    }
-    if (!videoId) return null;
-    return `https://www.youtube.com/embed/${videoId}?modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=0&enablejsapi=1&origin=${window.location.origin}`;
-  } catch {
-    return null;
-  }
+function isDirectVideo(url: string) {
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url);
 }
+
+function formatTime(s: number) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
+
+const THRESHOLD = 0.9;
+const SIM_DURATION = 240; // 4 minutes simulated for non-direct videos
 
 export function LessonVideoPlayer({
   lessonId,
@@ -37,111 +34,143 @@ export function LessonVideoPlayer({
   onAutoComplete,
 }: LessonVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [showTranscript, setShowTranscript] = useState(false);
-  const [watchProgress, setWatchProgress] = useState(0);
-  const hasAutoCompleted = useRef(false);
-
-  const embedUrl = getYouTubeEmbedUrl(videoUrl);
-  const isYouTube = !!embedUrl;
-
-  // Local video: track timeupdate for 90% auto-complete
-  const handleTimeUpdate = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || video.duration === 0) return;
-    const progress = (video.currentTime / video.duration) * 100;
-    setWatchProgress(Math.round(progress));
-    if (progress >= 90 && !hasAutoCompleted.current && !isCompleted) {
-      hasAutoCompleted.current = true;
-      onAutoComplete(lessonId);
-    }
-  }, [lessonId, isCompleted, onAutoComplete]);
-
-  // YouTube: poll via postMessage API
-  useEffect(() => {
-    if (!isYouTube || isCompleted) return;
-    
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== "https://www.youtube.com") return;
-      try {
-        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-        if (data.event === "infoDelivery" && data.info?.currentTime && data.info?.duration) {
-          const progress = (data.info.currentTime / data.info.duration) * 100;
-          setWatchProgress(Math.round(progress));
-          if (progress >= 90 && !hasAutoCompleted.current) {
-            hasAutoCompleted.current = true;
-            onAutoComplete(lessonId);
-          }
-        }
-      } catch {}
-    };
-
-    window.addEventListener("message", handleMessage);
-
-    // Start listening to YouTube player events
-    const interval = setInterval(() => {
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: "listening" }),
-          "https://www.youtube.com"
-        );
-      }
-    }, 1000);
-
-    return () => {
-      window.removeEventListener("message", handleMessage);
-      clearInterval(interval);
-    };
-  }, [isYouTube, lessonId, isCompleted, onAutoComplete]);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(SIM_DURATION);
+  const [playing, setPlaying] = useState(false);
+  const hasAutoCompleted = useRef(isCompleted);
+  const direct = isDirectVideo(videoUrl);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     hasAutoCompleted.current = isCompleted;
   }, [isCompleted]);
 
+  const checkComplete = useCallback(
+    (current: number, total: number) => {
+      if (total > 0 && current / total >= THRESHOLD && !hasAutoCompleted.current) {
+        hasAutoCompleted.current = true;
+        onAutoComplete(lessonId);
+      }
+    },
+    [lessonId, onAutoComplete]
+  );
+
+  // Simulated tick for non-direct sources
+  useEffect(() => {
+    if (direct) return;
+    if (!playing) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+    intervalRef.current = setInterval(() => {
+      setProgress((p) => {
+        const next = Math.min(p + 1, duration);
+        checkComplete(next, duration);
+        if (next >= duration) setPlaying(false);
+        return next;
+      });
+    }, 1000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [playing, direct, duration, checkComplete]);
+
+  const handleTimeUpdate = () => {
+    const v = videoRef.current;
+    if (!v || !v.duration) return;
+    setProgress(v.currentTime);
+    setDuration(v.duration);
+    checkComplete(v.currentTime, v.duration);
+  };
+
+  const toggle = () => {
+    if (direct && videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setPlaying(false);
+      }
+    } else {
+      setPlaying((p) => !p);
+    }
+  };
+
+  const pct = duration > 0 ? Math.min(100, Math.round((progress / duration) * 100)) : 0;
+  const ready = pct >= 90;
+
   return (
     <div className="space-y-2">
-      {isYouTube ? (
-        <div className="aspect-video rounded-lg overflow-hidden bg-muted relative">
-          <iframe
-            ref={iframeRef}
-            src={embedUrl}
-            title={title}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      ) : (
-        <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            controls
-            className="w-full h-full"
-            onTimeUpdate={handleTimeUpdate}
-          />
-        </div>
-      )}
+      <div className="relative rounded-xl overflow-hidden bg-[#0f172a]">
+        {/* Stage */}
+        <div className="relative aspect-video flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f]">
+          {direct && (
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              className="absolute inset-0 w-full h-full object-contain"
+              onTimeUpdate={handleTimeUpdate}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || SIM_DURATION)}
+              playsInline
+            />
+          )}
+          {!direct && (
+            <div className="text-center px-4 z-10">
+              <div className="text-xs text-slate-400 mb-2">Lesson Video</div>
+              <div className="text-base font-semibold text-white max-w-xs line-clamp-2">
+                {title}
+              </div>
+            </div>
+          )}
 
-      {/* Progress indicator */}
-      {!isCompleted && watchProgress > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+          {/* Play/Pause overlay */}
+          <button
+            onClick={toggle}
+            aria-label={playing ? "Pause" : "Play"}
+            className="absolute z-20 w-14 h-14 rounded-full flex items-center justify-center bg-primary/95 hover:bg-primary text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all backdrop-blur-sm"
+            style={playing ? { background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.3)" } : undefined}
+          >
+            {playing ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
+          </button>
+
+          {/* Duration badge */}
+          <div className="absolute bottom-2 right-2 z-10 bg-black/70 text-white text-[11px] font-semibold px-2 py-0.5 rounded">
+            {formatTime(progress)} / {formatTime(duration)}
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="bg-[#1e293b] px-4 py-2.5">
+          <div className="h-1 rounded-full bg-[#334155] overflow-hidden mb-1.5">
             <div
-              className="h-full bg-primary rounded-full transition-all"
-              style={{ width: `${watchProgress}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${pct}%`,
+                background: ready
+                  ? "linear-gradient(90deg, hsl(var(--dlh-success)), hsl(142 76% 50%))"
+                  : "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)))",
+              }}
             />
           </div>
-          <span className="text-xs text-muted-foreground">{watchProgress}%</span>
-          {watchProgress >= 90 && (
-            <Badge variant="outline" className="text-xs gap-1">
-              <CheckCircle size={10} /> Auto-completed
-            </Badge>
-          )}
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-slate-400">{pct}% watched</span>
+            {ready && !isCompleted && (
+              <span className="text-emerald-400 font-semibold">✓ Ready to complete</span>
+            )}
+            {ready && isCompleted && (
+              <Badge variant="outline" className="text-[10px] gap-1 border-emerald-500/40 text-emerald-400">
+                <CheckCircle size={10} /> Completed
+              </Badge>
+            )}
+            {!ready && <span className="text-slate-500">Watch 90% to complete</span>}
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* Transcript */}
       {transcript && (
         <div className="mt-2">
           <Button
