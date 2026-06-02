@@ -345,7 +345,7 @@ export default function Profile() {
               </div>
               <div className="flex-1 min-w-0 sm:pb-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-bold text-xl truncate">{profile?.full_name || "Set up your profile"}</h2>
+                  <h2 className="font-display text-2xl truncate">{profile?.full_name || "Set up your profile"}</h2>
                   {profile?.is_verified && (
                     <BadgeCheck className="text-primary flex-shrink-0" size={18} />
                   )}
@@ -430,6 +430,21 @@ export default function Profile() {
           </div>
         </motion.div>
 
+        {/* Stats row */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }} className="grid grid-cols-3 gap-3">
+          {[
+            { icon: <BookOpen size={18} className="text-primary" />, label: "Enrolled", value: stats.enrolled },
+            { icon: <CheckCircle size={18} className="text-emerald-500" />, label: "Completed", value: stats.completed },
+            { icon: <Star size={18} className="text-amber-500" fill="currentColor" />, label: "Rating", value: stats.rating },
+          ].map((s) => (
+            <div key={s.label} className="dlh-card p-4 flex flex-col gap-1.5">
+              <span>{s.icon}</span>
+              <span className="font-display text-xl leading-none">{s.value}</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</span>
+            </div>
+          ))}
+        </motion.div>
+
         {/* Become a tutor CTA */}
         <TutorRequestButton />
 
@@ -481,11 +496,63 @@ export default function Profile() {
               <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about yourself..." className="mt-1" rows={3} disabled={!canEdit} />
             </div>
           </div>
+
+          {/* Social Links */}
+          <div className="mt-6 pt-5 border-t border-border">
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-primary rounded-full" /> Social Links
+            </h4>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="linkedin_url" className="text-xs flex items-center gap-1.5">
+                  <Linkedin size={12} className="text-[#0a66c2]" /> LinkedIn
+                </Label>
+                <Input
+                  id="linkedin_url"
+                  name="linkedin_url"
+                  value={formData.linkedin_url}
+                  onChange={handleInputChange}
+                  placeholder="https://linkedin.com/in/username"
+                  className="mt-1"
+                  disabled={!canEdit}
+                />
+              </div>
+              <div>
+                <Label htmlFor="twitter_url" className="text-xs flex items-center gap-1.5">
+                  <Twitter size={12} className="text-[#1da1f2]" /> Twitter / X
+                </Label>
+                <Input
+                  id="twitter_url"
+                  name="twitter_url"
+                  value={formData.twitter_url}
+                  onChange={handleInputChange}
+                  placeholder="https://twitter.com/username"
+                  className="mt-1"
+                  disabled={!canEdit}
+                />
+              </div>
+            </div>
+          </div>
+
           {canEdit && (
-            <div className="mt-4 flex justify-end">
-              <Button onClick={handleSaveProfile} disabled={loading} className="bg-gradient-primary hover:opacity-90">
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                {isProfileLocked ? "Save Changes" : "Save & Lock Profile"}
+            <div className="mt-5 flex justify-end">
+              <Button
+                onClick={handleSaveProfile}
+                disabled={loading}
+                className={`transition-all duration-300 ${
+                  savedFlash
+                    ? "bg-emerald-500 hover:bg-emerald-500 text-white"
+                    : "bg-gradient-primary hover:opacity-90"
+                }`}
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : savedFlash ? (
+                  <Check className="mr-2 h-4 w-4" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {savedFlash ? "Saved!" : isProfileLocked ? "Save Changes" : "Save & Lock Profile"}
               </Button>
             </div>
           )}
