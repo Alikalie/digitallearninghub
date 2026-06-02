@@ -278,7 +278,7 @@ export default function Profile() {
     <DashboardLayout>
       <div className="p-4 lg:p-6 max-w-2xl mx-auto space-y-6 pb-20">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-bold mb-1">My Profile</h1>
+          <h1 className="font-display text-3xl mb-1">My Profile</h1>
           <p className="text-muted-foreground text-sm">Manage your account and preferences</p>
         </motion.div>
 
@@ -324,7 +324,9 @@ export default function Profile() {
               <div className="relative">
                 <Avatar className="h-24 w-24 border-4 border-card shadow-lg">
                   <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white text-2xl font-display">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
                   onChange={async (e) => {
