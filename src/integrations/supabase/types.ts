@@ -359,25 +359,34 @@ export type Database = {
           completed: boolean | null
           completed_at: string | null
           created_at: string
+          duration_seconds: number
           id: string
+          last_position: number
           lesson_id: string
           user_id: string
+          watch_seconds: number
         }
         Insert: {
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string
+          duration_seconds?: number
           id?: string
+          last_position?: number
           lesson_id: string
           user_id: string
+          watch_seconds?: number
         }
         Update: {
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string
+          duration_seconds?: number
           id?: string
+          last_position?: number
           lesson_id?: string
           user_id?: string
+          watch_seconds?: number
         }
         Relationships: [
           {
