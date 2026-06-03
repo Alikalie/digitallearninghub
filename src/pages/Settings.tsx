@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
-  Loader2, User, Bell, Shield, Palette, Save, Camera,
+  Loader2, User, Bell, Shield, Palette, Save, Camera, Unlock,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -37,6 +37,8 @@ export default function Settings() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [unlockPassword, setUnlockPassword] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -173,6 +175,37 @@ export default function Settings() {
       toast.error(error.message || "Failed to update password");
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleUnlockProfile = async () => {
+    if (!user || !profile) return;
+    if (!unlockPassword) {
+      toast.error("Enter your password to unlock");
+      return;
+    }
+    setUnlocking(true);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email || "",
+        password: unlockPassword,
+      });
+      if (signInError) {
+        toast.error("Incorrect password");
+        return;
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_profile_locked: false } as any)
+        .eq("id", profile.id);
+      if (error) throw error;
+      await refreshProfile();
+      setUnlockPassword("");
+      toast.success("Profile unlocked — you can now edit it.");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to unlock");
+    } finally {
+      setUnlocking(false);
     }
   };
 
