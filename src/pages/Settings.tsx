@@ -552,6 +552,32 @@ export default function Settings() {
                 </div>
               </div>
 
+              {/* Unlock Profile */}
+              {profile?.is_profile_locked && (
+                <div className="dlh-card p-6 border-amber-500/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Unlock size={18} className="text-amber-600" />
+                    <h2 className="text-lg font-semibold">Unlock Profile</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Your profile is currently locked. Enter your password to unlock and edit your details.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+                    <Input
+                      type="password"
+                      placeholder="Your password"
+                      value={unlockPassword}
+                      onChange={(e) => setUnlockPassword(e.target.value)}
+                      autoComplete="current-password"
+                    />
+                    <Button onClick={handleUnlockProfile} disabled={unlocking} className="bg-gradient-primary">
+                      {unlocking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlock className="mr-2 h-4 w-4" />}
+                      Unlock
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="dlh-card p-6 border-destructive/20">
                 <h2 className="text-lg font-semibold text-destructive mb-4">
                   Danger Zone
