@@ -62,7 +62,7 @@ export function LessonVideoPlayer({
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("course_progress")
         .select("last_position, duration_seconds")
         .eq("user_id", user.id)
