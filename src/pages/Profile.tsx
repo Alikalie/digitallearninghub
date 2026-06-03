@@ -299,8 +299,8 @@ export default function Profile() {
             <Lock className="text-muted-foreground flex-shrink-0 mt-0.5" size={20} />
             <div className="flex-1">
               <p className="font-semibold text-sm">Profile Locked</p>
-              <p className="text-sm text-muted-foreground">Your profile is locked. To make changes, request permission from admin.</p>
-              <div className="mt-2 flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">Inputs are disabled. Unlock from <a href="/settings" className="underline font-medium text-primary">Settings → Security</a> (requires password) or request admin permission.</p>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
                 {editRequestStatus === "pending" ? (
                   <div className="flex items-center gap-2 text-sm text-amber-600">
                     <Clock size={14} /> Edit request pending approval
@@ -377,13 +377,14 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Profile completion */}
+            {/* Profile completion (live, updates as you type) */}
             {(() => {
               const fields = [
-                profile?.full_name, profile?.phone_number, profile?.country,
-                profile?.course_of_interest, profile?.gender, profile?.bio, profile?.avatar_url,
+                formData.first_name, formData.phone_number, formData.country,
+                formData.course_of_interest, profile?.gender, formData.bio,
+                profile?.avatar_url, formData.linkedin_url, formData.twitter_url,
               ];
-              const filled = fields.filter(Boolean).length;
+              const filled = fields.filter((v) => v && String(v).trim().length > 0).length;
               const pct = Math.round((filled / fields.length) * 100);
               return (
                 <div className="mt-5">

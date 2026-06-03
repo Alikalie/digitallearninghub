@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
-  Loader2, User, Bell, Shield, Palette, Save, Camera,
+  Loader2, User, Bell, Shield, Palette, Save, Camera, Unlock,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -37,6 +37,8 @@ export default function Settings() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [unlockPassword, setUnlockPassword] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: "",
@@ -173,6 +175,37 @@ export default function Settings() {
       toast.error(error.message || "Failed to update password");
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleUnlockProfile = async () => {
+    if (!user || !profile) return;
+    if (!unlockPassword) {
+      toast.error("Enter your password to unlock");
+      return;
+    }
+    setUnlocking(true);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email || "",
+        password: unlockPassword,
+      });
+      if (signInError) {
+        toast.error("Incorrect password");
+        return;
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .update({ is_profile_locked: false } as any)
+        .eq("id", profile.id);
+      if (error) throw error;
+      await refreshProfile();
+      setUnlockPassword("");
+      toast.success("Profile unlocked — you can now edit it.");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to unlock");
+    } finally {
+      setUnlocking(false);
     }
   };
 
@@ -518,6 +551,32 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
+
+              {/* Unlock Profile */}
+              {profile?.is_profile_locked && (
+                <div className="dlh-card p-6 border-amber-500/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Unlock size={18} className="text-amber-600" />
+                    <h2 className="text-lg font-semibold">Unlock Profile</h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Your profile is currently locked. Enter your password to unlock and edit your details.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+                    <Input
+                      type="password"
+                      placeholder="Your password"
+                      value={unlockPassword}
+                      onChange={(e) => setUnlockPassword(e.target.value)}
+                      autoComplete="current-password"
+                    />
+                    <Button onClick={handleUnlockProfile} disabled={unlocking} className="bg-gradient-primary">
+                      {unlocking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlock className="mr-2 h-4 w-4" />}
+                      Unlock
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="dlh-card p-6 border-destructive/20">
                 <h2 className="text-lg font-semibold text-destructive mb-4">
