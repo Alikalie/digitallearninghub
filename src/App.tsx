@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 // Pages
 import Landing from "./pages/Landing";
@@ -33,6 +34,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <InstallPrompt />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
